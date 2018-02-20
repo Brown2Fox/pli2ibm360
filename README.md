@@ -31,3 +31,9 @@ $ make
 $ ./run.sh
 ```
 
+### Dependencies
+
+For Ubuntu:
+1. Flex `$ sudo apt install flex`
+2. Bison `$ sudo apt install bison`
+3. ncurses `$ sudo apt install libncurses5-dev libncursesw5-dev`
