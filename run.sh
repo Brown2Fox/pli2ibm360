@@ -7,8 +7,8 @@ echo "continue? (Y/n)"
 read ANSW
 if [ "$ANSW" != "n" ] 
 then
-    echo "./build/pl1c -i examppl.pli -o ./build/examppl.ass"
-    ./build/pl1c -i examppl.pli -o ./build/examppl.ass
+    echo "./build/pli2asm -i examppl.pli -o ./build/examppl.ass"
+    ./build/pli2asm -i examppl.pli -o ./build/examppl.ass
 else 
     exit 1
 fi
@@ -18,8 +18,8 @@ echo "continue? (Y/n)"
 read ANSW
 if [ "$ANSW" != "n" ] 
 then
-    echo "./build/pl1l -i examppl.ass -o examppl.bin"
-    cd build && ./pl1l -i examppl.ass -o examppl.bin
+    echo "./build/asm2obj -i examppl.ass -o examppl.bin"
+    cd build && ./asm2obj -i examppl.ass -o examppl.bin
 else 
     exit 1
 fi
