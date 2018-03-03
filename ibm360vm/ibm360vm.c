@@ -5,7 +5,11 @@
 #include <string.h> /*подкл.библ.ф-й стр.симв.*/
 #include <stdlib.h> /*подкл.библ.ф-й преобр.д.*/
 #include <ctype.h> /*подкл.библ.ф-й преобр.с.*/
+#if defined(_WIN32) || defined(_WIN64)
+#include <ncurses/ncurses.h>
+#else
 #include <ncurses.h>
+#endif
 
 #define NSPIS 5 /*разм.списка загр.прогр. */
 #define NOBJ 50 /*разм.масс.об'ектных карт*/
