@@ -584,6 +584,7 @@ int main(int argc, char* argv[])
 {
     int opt = 0;
      
+    globalArgs.inFileName = NULL;
     globalArgs.outFileName = NULL;
     globalArgs.verbosity = 0;
 
@@ -622,20 +623,24 @@ int main(int argc, char* argv[])
 
     if (!yyparse()) 
     {
-        int fd = open(globalArgs.outFileName, O_CREAT|O_WRONLY|O_TRUNC, S_IWUSR);
-        if (fd < 0) 
+//        int fd = open(globalArgs.outFileName, O_CREAT|O_WRONLY|O_TRUNC, S_IWUSR);
+        FILE* fd = fopen(globalArgs.outFileName, "w");
+//        if (fd < 0)
+//        {
+//            printf("\n*** Error trying to create Result.ass file: check your write permissions");
+//            return -1;
+//        }
+
+
+        for (int i = 0; i < pAssProg; i++)
         {
-            printf("\n*** Error trying to create Result.ass file: check your write permissions");
-            return -1;
-        }
-        
-        for (int i = 0; i < pAssProg; i++) 
-        {
-            if (80 != write(fd, &AssProg[i][0], 80))
-            {
-                printf("\n*** Error during writing Result.ass file\n");
-                break;
-            }
+            fprintf(fd, "%.80s|\n", &AssProg[i][0]);
+//            fprintf(fd, "%s\n", "dsadsdadasd");
+            // if (80 != write(fd, &AssProg[i][0], 80))
+            // {
+                // printf("\n*** Error during writing Result.ass file\n");
+                // break;
+            // }
         }
         
         close(fd);

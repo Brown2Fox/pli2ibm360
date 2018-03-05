@@ -959,30 +959,31 @@ int main(int argc, char* argv[])
     }
 
 
-    if ((fp = fopen(globalArgs.inFileName, "rb")) == NULL)
+    if ((fp = fopen(globalArgs.inFileName, "r")) == NULL)
     {
-        printf("%s\n", "Не найден файл с исходным текстом");
+        printf("%s\n", "No source file found");
         return -1;
     }
     else
-
     {
         for (I1 = 0; I1 <= DL_ASSTEXT; I1++)
-
         {
-            if (!fread(ASSTEXT[I1], 80, 1, fp))
+            char trash[2];
+            if (fread(ASSTEXT[I1], sizeof(char), 80, fp)!= 80 || fread(trash, sizeof(char), 2, fp) != 2)
             {
+
                 if (feof(fp))
                     goto main1;
                 else
                 {
-                    printf("%s\n", "Ошибка при чтении фыйла с исх.текстом");
+                    printf("%s\n", "Error reading source file");
                     return -1;
                 }
             }
+            printf("%.80s <<\n", ASSTEXT[I1]);
         }
 
-        printf("%s\n", "Переполнение буфера чтения исх.текста");
+        printf("%s\n", "Read buffer is overflow");
         return -1;
     }
     
