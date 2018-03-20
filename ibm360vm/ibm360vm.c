@@ -5,6 +5,7 @@
 #include <string.h> /*подкл.библ.ф-й стр.симв.*/
 #include <stdlib.h> /*подкл.библ.ф-й преобр.д.*/
 #include <ctype.h> /*подкл.библ.ф-й преобр.с.*/
+#include <unistd.h>
 #if defined(_WIN32) || defined(_WIN64)
 #include <ncurses/ncurses.h>
 #else
@@ -15,6 +16,14 @@
 #define NOBJ 50 /*разм.масс.об'ектных карт*/
 #define DOBLZ 1024 /*длина области загрузки  */
 #define NOP 6 /*кол-во обрабатываемых команд */
+
+struct
+{
+    const char *outFileName;
+    const char *inFileName;
+    int verbosity;
+} globalArgs;
+
 
 char NFIL[30] = "\x0";
 
@@ -633,44 +642,33 @@ int main(int argc, char **argv) /* п р о г р а м м а      */
     FILE *fp; /*программы               */
     char *ptr;
 
+    int opt = 0;
     // main programm
 
-    if (argc != 2)
+    while((opt = getopt(argc, argv, "i:")) != -1)
     {
-        printf("Error in command line\n");
-        return -1;
-    }
-
-    ptr = argv[1];
-    strcpy(NFIL, ptr);
-
-    if (strcmp(&NFIL[strlen(NFIL) - 3], "mod"))
-    {
-        goto ERR9;
-        return -1;
-    }
-
-    if ((fp = fopen(NFIL, "rt")) == NULL)
-        goto ERR1; /*сообщение об ошибке     */
-    else
-    {
-        while (!feof(fp)) /*читать все карты файла  */
-        { /*со списком */
-            fgets(SPISOK[ISPIS++], 80, fp); /*в массив SPISOK         */
-            if (ISPIS == NSPIS) /*если этот массив пере-  */
-            { /*полнен, то: */
-                fclose(fp); /*закрыть файл со списком */
-                goto ERR4; /*и выдать сообщение об ош*/
-            }
+        
+        switch(opt)
+        {
+            case 'i':
+                optind--;
+                for( ;optind < argc && *argv[optind] != '-'; optind++)
+                {
+                        printf("%s\n", argv[optind]);
+                        strcpy(SPISOK[ISPIS++],argv[optind]);
+                }
+            break;
         }
-        fclose(fp); /*закрыть файл SPISOK     */
+    }
 
-        if (ISPIS == 0) /*если список пустойб     */
+
+
+if (ISPIS == 0) /*если список пустойб     */
             /*то:                     */
             goto ERR2; /* сообщение об ошибке    */
-        else /*иначе:                  */
+else /*иначе:                  */
             goto CONT1; /* продолжить обработку   */
-    }
+    
 
 CONT1:
 
