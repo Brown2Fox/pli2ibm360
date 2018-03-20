@@ -1,8 +1,8 @@
-#define DL_ASSTEXT 100
-#define DL_OBJTEXT 50 /*длина об'ектн. текста   */
+#define ASM_TEXT_LEN 100
+#define OBJTEXT_LEN 50 /*длина об'ектн. текста   */
 #define NSYM 10 /*размер табл.символов    */
-#define NPOP 6 /*размер табл.псевдоопер. */
-#define NOP 6 /*размер табл.операций    */
+#define N_PSEUDO_OPS 6 /*размер табл.псевдоопер. */
+#define N_OPS 6 /*размер табл.операций    */
 #include <string.h> /*вкл.строковые подпрогр. */
 #include <stdlib.h> /*вкл.подпрогр.преобр.данн*/
 #include <stdio.h> /*вкл.подпр.станд.вв/выв  */
@@ -15,36 +15,44 @@
 
 char NFIL[30] = "\x0";
 
-unsigned char PRNMET = 'N'; /*индикатор обнаруж.метки */
-int I3; /*счетчик цикла           */
+unsigned char LABEL_FLAG = 'N'; /*индикатор обнаруж.метки */
+int k; /*счетчик цикла           */
+
+struct {
+    const char *outFileName;
+    const char *inFileName;
+    int verbosity;
+} globalArgs;
+static const char *optString = "i:o:v";
+
 
 /*
 ***** Б Л О К  об'явлений прототипов обращений к подпрограммам 1-го просмотра
 */
 
 /*п р о т о т и п  обращ.к*/
-int FDC(); /*подпр.обр.пс.опер.DC    */
+int F_DC(); /*подпр.обр.пс.опер.DC    */
 /*..........................................................................*/
 /*п р о т о т и п  обращ.к*/
-int FDS(); /*подпр.обр.пс.опер.DS    */
+int F_DS(); /*подпр.обр.пс.опер.DS    */
 /*..........................................................................*/
 /*п р о т о т и п  обращ.к*/
-int FEND(); /*подпр.обр.пс.опер.END   */
+int F_END(); /*подпр.обр.пс.опер.END   */
 /*..........................................................................*/
 /*п р о т о т и п  обращ.к*/
-int FEQU(); /*подпр.обр.пс.опер.EQU   */
+int F_EQU(); /*подпр.обр.пс.опер.EQU   */
 /*..........................................................................*/
 /*п р о т о т и п  обращ.к*/
-int FSTART(); /*подпр.обр.пс.опер.START */
+int F_START(); /*подпр.обр.пс.опер.START */
 /*..........................................................................*/
 /*п р о т о т и п  обращ.к*/
-int FUSING(); /*подпр.обр.пс.опер.USING */
+int F_USING(); /*подпр.обр.пс.опер.USING */
 /*..........................................................................*/
 /*п р о т о т и п  обращ.к*/
-int FRR(); /*подпр.обр.опер.RR-форм. */
+int F_RR(); /*подпр.обр.опер.RR-форм. */
 /*..........................................................................*/
 /*п р о т о т и п  обращ.к*/
-int FRX(); /*подпр.обр.опер.RX-форм. */
+int F_RX(); /*подпр.обр.опер.RX-форм. */
 /*..........................................................................*/
 
 /*
@@ -52,28 +60,28 @@ int FRX(); /*подпр.обр.опер.RX-форм. */
 */
 
 /*п р о т о т и п  обращ.к*/
-int SDC(); /*подпр.обр.пс.опер.DC    */
+int S_DC(); /*подпр.обр.пс.опер.DC    */
 /*..........................................................................*/
 /*п р о т о т и п  обращ.к*/
-int SDS(); /*подпр.обр.пс.опер.DS    */
+int S_DS(); /*подпр.обр.пс.опер.DS    */
 /*..........................................................................*/
 /*п р о т о т и п  обращ.к*/
-int SEND(); /*подпр.обр.пс.опер.END   */
+int S_END(); /*подпр.обр.пс.опер.END   */
 /*..........................................................................*/
 /*п р о т о т и п  обращ.к*/
-int SEQU(); /*подпр.обр.пс.опер.EQU   */
+int S_EQU(); /*подпр.обр.пс.опер.EQU   */
 /*..........................................................................*/
 /*п р о т о т и п  обращ.к*/
-int SSTART(); /*подпр.обр.пс.опер.START */
+int S_START(); /*подпр.обр.пс.опер.START */
 /*..........................................................................*/
 /*п р о т о т и п  обращ.к*/
-int SUSING(); /*подпр.обр.пс.опер.USING */
+int S_USING(); /*подпр.обр.пс.опер.USING */
 /*..........................................................................*/
 /*п р о т о т и п  обращ.к*/
-int SRR(); /*подпр.обр.опер.RR-форм. */
+int S_RR(); /*подпр.обр.опер.RR-форм. */
 /*..........................................................................*/
 /*п р о т о т и п  обращ.к*/
-int SRX(); /*подпр.обр.опер.RX-форм. */
+int S_RX(); /*подпр.обр.опер.RX-форм. */
 /*..........................................................................*/
 
 /*
@@ -84,15 +92,15 @@ int SRX(); /*подпр.обр.опер.RX-форм. */
 ******* ОБ'ЯВЛЕНИЕ структуры строки (карты) исходного текста
 */
 
-struct ASSKARTA /*структ.карты АССЕМБЛЕРА */
+struct ASM_MAP /*структ.карты АССЕМБЛЕРА */
 {
-    unsigned char METKA[8]; /*поле метки              */
-    unsigned char PROBEL1[1]; /*пробел-разделитель      */
-    unsigned char OPERAC[5]; /*поле операции           */
-    unsigned char PROBEL2[1]; /*пробел-разделитель      */
+    unsigned char LABEL[8]; /*поле метки              */
+    unsigned char SPACES_1[1]; /*пробел-разделитель      */
+    unsigned char OPERATION[5]; /*поле операции           */
+    unsigned char SPACES_2[1]; /*пробел-разделитель      */
     unsigned char OPERAND[12]; /*поле операнда           */
-    unsigned char PROBEL3[1]; /*пробел разделитель      */
-    unsigned char COMM[52]; /*поле комментария        */
+    unsigned char SPACES_3[1]; /*пробел разделитель      */
+    unsigned char COMMENT[52]; /*поле комментария        */
 };
 
 /*
@@ -101,15 +109,15 @@ struct ASSKARTA /*структ.карты АССЕМБЛЕРА */
 
 union /*определить об'единение  */
 {
-    unsigned char BUFCARD[80]; /*буфер карты.исх.текста  */
-    struct ASSKARTA STRUCT_BUFCARD; /*наложение шабл.на буфер */
-} TEK_ISX_KARTA;
+    unsigned char buffer[80]; /*буфер карты.исх.текста  */
+    struct ASM_MAP structure; /*наложение шабл.на буфер */
+} SRC_CODE;
 
 /*
 ***** СЧЕТЧИК относительного адреса (смещешия относительно базы )
 */
 
-int CHADR; /*счетчик                 */
+int ADDR_COUNTER; /*счетчик                 */
 
 /*
 ***** ТАБЛИЦА символов
@@ -118,9 +126,9 @@ int CHADR; /*счетчик                 */
 int ITSYM = -1; /*инд.своб.стр. табл.симв.*/
 struct TSYM /*структ.строки табл.симв.*/
 {
-    unsigned char IMSYM[8]; /*имя символа             */
-    int ZNSYM; /*значение символа        */
-    int DLSYM; /*длина символа           */
+    unsigned char SYM_NAME[8]; /*имя символа             */
+    int SYM_ADDR; /*значение символа        */
+    int SYM_LENGTH; /*длина символа           */
     char PRPER; /*признак перемещения     */
 };
 
@@ -132,23 +140,23 @@ struct TSYM T_SYM[NSYM]; /*определение табл.симв.  */
 
 struct TMOP /*структ.стр.табл.маш.опер*/
 {
-    unsigned char MNCOP[5]; /*мнемокод операции       */
-    unsigned char CODOP; /*машинный код операции   */
-    unsigned char DLOP; /*длина операции в байтах */
-    int (*BXPROG)(); /*указатель на подпр.обраб*/
-} T_MOP[NOP] = /*об'явление табл.маш.опер*/
+    unsigned char OP_NAME[5]; /*мнемокод операции       */
+    unsigned char OP_CODE; /*машинный код операции   */
+    unsigned char OP_LEN; /*длина операции в байтах */
+    int (*CALLBACK)(); /*указатель на подпр.обраб*/
+} OP_TABLE[N_OPS] = /*об'явление табл.маш.опер*/
     {
             // Branch And Link Register
             // BALR target_register,source_register (both register values are 0 to 15)
-      { { 'B', 'A', 'L', 'R', ' ' }, '\x05', 2, FRR },
+      { { 'B', 'A', 'L', 'R', ' ' }, '\x05', 2, F_RR },
             // Branch on Condition Register
             // BCR mask_value, branch_register (both values are 0 to 15)
-      { { 'B', 'C', 'R', ' ', ' ' }, '\x07', 2, FRR },
+      { { 'B', 'C', 'R', ' ', ' ' }, '\x07', 2, F_RR },
 
-      { { 'S', 'T', ' ', ' ', ' ' }, '\x50', 4, FRX }, /* Store */
-      { { 'L', ' ', ' ', ' ', ' ' }, '\x58', 4, FRX }, /* Load */
-      { { 'A', ' ', ' ', ' ', ' ' }, '\x5A', 4, FRX }, /* Add */
-      { { 'S', ' ', ' ', ' ', ' ' }, '\x5B', 4, FRX }, /* Substract */
+      { { 'S', 'T', ' ', ' ', ' ' }, '\x50', 4, F_RX }, /* Store */
+      { { 'L', ' ', ' ', ' ', ' ' }, '\x58', 4, F_RX }, /* Load */
+      { { 'A', ' ', ' ', ' ', ' ' }, '\x5A', 4, F_RX }, /* Add */
+      { { 'S', ' ', ' ', ' ', ' ' }, '\x5B', 4, F_RX }, /* Substract */
     };
 
 /*
@@ -157,16 +165,16 @@ struct TMOP /*структ.стр.табл.маш.опер*/
 
 struct TPOP /*структ.стр.табл.пс.опeр.*/
 {
-    unsigned char MNCPOP[5]; /*мнемокод псевдооперации */
-    int (*BXPROG)(); /*указатель на подпр.обраб*/
-} T_POP[NPOP] = /*об'явление табл.псевдооп*/
+    unsigned char PSEUDO_OP_NAME[5]; /*мнемокод псевдооперации */
+    int (*CALLBACK)(); /*указатель на подпр.обраб*/
+} PSEUDO_OP_TABLE[N_PSEUDO_OPS] = /*об'явление табл.псевдооп*/
     {
-      { { 'D', 'C', ' ', ' ', ' ' }, FDC }, /*инициализация           */
-      { { 'D', 'S', ' ', ' ', ' ' }, FDS }, /*строк                   */
-      { { 'E', 'N', 'D', ' ', ' ' }, FEND }, /*таблицы                 */
-      { { 'E', 'Q', 'U', ' ', ' ' }, FEQU }, /*псевдоопераций          */
-      { { 'S', 'T', 'A', 'R', 'T' }, FSTART }, /*                        */
-      { { 'U', 'S', 'I', 'N', 'G' }, FUSING } /*                        */
+      { { 'D', 'C', ' ', ' ', ' ' }, F_DC }, /*инициализация           */
+      { { 'D', 'S', ' ', ' ', ' ' }, F_DS }, /*строк                   */
+      { { 'E', 'N', 'D', ' ', ' ' }, F_END }, /*таблицы                 */
+      { { 'E', 'Q', 'U', ' ', ' ' }, F_EQU }, /*псевдоопераций          */
+      { { 'S', 'T', 'A', 'R', 'T' }, F_START }, /*                        */
+      { { 'U', 'S', 'I', 'N', 'G' }, F_USING } /*                        */
     };
 
 /*
@@ -175,9 +183,9 @@ struct TPOP /*структ.стр.табл.пс.опeр.*/
 
 struct TBASR /*структ.стр.табл.баз.рег.*/
 {
-    int SMESH; /*                        */
+    int OFFSET; /*                        */
     char PRDOST; /*                        */
-} T_BASR[15] = /*                        */
+} BASE_REGS_TABLE[15] = /*                        */
     {
       { 0x00, 'N' }, /*инициализация           */
       { 0x00, 'N' }, /*строк                   */
@@ -200,225 +208,253 @@ struct TBASR /*структ.стр.табл.баз.рег.*/
 ***** Б Л О К   об'явления массива с об'ектным текстом
 */
 
-unsigned char OBJTEXT[DL_OBJTEXT][80]; /*массив об'ектных карт   */
+unsigned char OBJTEXT[OBJTEXT_LEN][80]; /*массив об'ектных карт   */
 int ITCARD = 0; /*указатель текущ.карты   */
 
-struct OPRR /*структ.буф.опер.форм.RR */
+struct OP_RR /*структ.буф.опер.форм.RR */
 {
-    unsigned char OP; /*код операции            */
-    unsigned char R1R2; /*R1 - первый операнд     */
+    unsigned char OP_CODE; /*код операции            */
+    unsigned char R1_R2; /*R1 - первый операнд     */
     /*R2 - второй операнд     */
 };
 
 union /*определить об'единение  */
 {
-    unsigned char BUF_OP_RR[2]; /*оределить буфер         */
-    struct OPRR OP_RR; /*структурировать его     */
+    unsigned char buffer[2]; /*оределить буфер         */
+    struct OP_RR structure; /*структурировать его     */
 } RR;
 
-struct OPRX /*структ.буф.опер.форм.RX */
+struct OP_RX /*структ.буф.опер.форм.RX */
 {
-    unsigned char OP; /*код операции            */
-    unsigned char R1X2; /*R1 - первый операнд     */
-    short B2D2; /*X2 - второй операнд     */
-    //    int B2D2;                                     /*X2 - второй операнд     */
+    unsigned char OP_CODE; /*код операции            */
+    unsigned char R1_X2; /*R1 - первый операнд     */
+//    short B2_D2; /*X2 - второй операнд     */
+    int B2_D2;
+    /*X2 - второй операнд     */
     /*B2 - баз.рег.2-го оп-да */
     /*D2 - смещен.относит.базы*/
 };
 
 union /*определить об'единение  */
 {
-    unsigned char BUF_OP_RX[4]; /*оределить буфер         */
-    struct OPRX OP_RX; /*структурировать его     */
+    unsigned char buffer[4]; /*оределить буфер         */
+    struct OP_RX structure; /*структурировать его     */
 } RX;
 
 struct STR_BUF_ESD /*структ.буфера карты ESD */
 {
-    unsigned char POLE1; /*место для кода 0x02     */
-    unsigned char POLE2[3]; /*поле типа об'ектн.карты */
-    unsigned char POLE3[6]; /*пробелы                 */
-    unsigned char POLE31[2]; /*длина данных на карте   */
-    unsigned char POLE32[2]; /*пробелы                 */
-    unsigned char POLE4[2]; /*внутр.ид-р имени прогр. */
-    unsigned char IMPR[8]; /*имя программы           */
-    unsigned char POLE6; /*код типа ESD-имени      */
-    unsigned char ADPRG[3]; /*относит.адрес программы */
-    unsigned char POLE8; /*пробелы                 */
-    unsigned char DLPRG[3]; /*длина программы         */
-    unsigned char POLE10[40]; /*пробелы                 */
-    unsigned char POLE11[8]; /*идентификационное поле  */
+    unsigned char FIELD_1; /*место для кода 0x02     */
+    unsigned char MAP_TYPE[3]; /*поле типа об'ектн.карты */
+    unsigned char SPACES_1[6]; /*пробелы                 */
+    unsigned char DATA_LENGTH[2]; /*длина данных на карте   */
+    unsigned char SPACES_2[2]; /*пробелы                 */
+    unsigned char PROGRAM_ID[2]; /*внутр.ид-р имени прогр. */
+    unsigned char PROGRAM_NAME[8]; /*имя программы           */
+    unsigned char TYPE_CODE; /*код типа ESD-имени      */
+    unsigned char PROGRAM_ADDR[3]; /*относит.адрес программы */
+    unsigned char SPACES_3; /*пробелы                 */
+    unsigned char PROGRAM_LENGTH[3]; /*длина программы         */
+    unsigned char SPACES_4[40]; /*пробелы                 */
+    unsigned char ID_FIELD[8]; /*идентификационное поле  */
 };
+
+// ESD 1 3 6 2 2 2 8 1 3 1 3 40 8
+// FIELD_1 MAP_TYPE SPACES_1 DATA_LENGTH SPACES_2 PROGRAM_ID PROGRAM_NAME TYPE_CODE PROGRAM_ADDR SPACES_3 PROGRAM_LENGTH SPACES_4 ID_FIELD
 
 struct STR_BUF_TXT /*структ.буфера карты TXT */
 {
-    unsigned char POLE1; /*место для кода 0x02     */
-    unsigned char POLE2[3]; /*поле типа об'ектн.карты */
-    unsigned char POLE3; /*пробел                  */
-    unsigned char ADOP[3]; /*относит.адрес опреации  */
-    unsigned char POLE5[2]; /*пробелы                 */
-    unsigned char DLNOP[2]; /*длина операции          */
-    unsigned char POLE7[2]; /*пробелы                 */
-    unsigned char POLE71[2]; /*внутренний идент.прогр. */
-    unsigned char OPER[56]; /*тело операции           */
-    unsigned char POLE9[8]; /*идентификационное поле  */
+    unsigned char FIELD_1; /*место для кода 0x02     */
+    unsigned char MAP_TYPE[3]; /*поле типа об'ектн.карты */
+    unsigned char SPACES_1; /*пробел                  */
+    unsigned char OP_ADDR[3]; /*относит.адрес опреации  */
+    unsigned char SPACES_2[2]; /*пробелы                 */
+    unsigned char OP_LENGTH[2]; /*длина операции          */
+    unsigned char SPACES_3[2]; /*пробелы                 */
+    unsigned char PROGRAM_ID[2]; /*внутренний идент.прогр. */
+    unsigned char OP_BODY[56]; /*тело операции           */
+    unsigned char ID_FIELD[8]; /*идентификационное поле  */
 };
-
+// TXT 1 3 1 3 2 2 2 2 56 8
+// FIELD_1 MAP_TYPE SPACES_1 OP_ADDR SPACES_2 OP_LENGTH SPACES_3  PROGRAM_ID OP_BODY ID_FIELD
 struct STR_BUF_END /*структ.буфера карты END */
 {
-    unsigned char POLE1; /*место для кода 0x02     */
-    unsigned char POLE2[3]; /*поле типа об'ектн.карты */
-    unsigned char POLE3[68]; /*пробелы                 */
-    unsigned char POLE9[8]; /*идентификационное поле  */
+    unsigned char FIELD_1; /*место для кода 0x02     */
+    unsigned char MAP_TYPE[3]; /*поле типа об'ектн.карты */
+    unsigned char SPACES_1[68]; /*пробелы                 */
+    unsigned char ID_FIELD[8]; /*идентификационное поле  */
 };
 
 union /*определить об'единение  */
 {
-    struct STR_BUF_ESD STR_ESD; /*структура буфера        */
-    unsigned char BUF_ESD[80]; /*буфер карты ESD         */
+    struct STR_BUF_ESD structure; /*структура буфера        */
+    unsigned char buffer[80]; /*буфер карты ESD         */
 } ESD;
 
+struct STR_BUF_ESD ESD_BUFF[1];
 
 union /*определить об'единение  */
 {
-    struct STR_BUF_TXT STR_TXT; /*структура буфера        */
-    unsigned char BUF_TXT[80]; /*буфер карты TXT         */
+    struct STR_BUF_TXT structure; /*структура буфера        */
+    unsigned char buffer[80]; /*буфер карты TXT         */
 } TXT;
 
+struct STR_BUF_TXT TXT_BUFF[OBJTEXT_LEN];
+
 union /*определить об'единение  */
 {
-    struct STR_BUF_END STR_END; /*структура буфера        */
-    unsigned char BUF_END[80]; /*буфер карты ESD         */
+    struct STR_BUF_END structure; /*структура буфера        */
+    unsigned char buffer[80]; /*буфер карты ESD         */
 } END;
 
+struct STR_BUF_END END_BUFF[1];
 
 /*
 ******* Б Л О К  об'явлений подпрограмм, используемых при 1-ом просмотре
 */
-
-int FDC() /*подпр.обр.пс.опер.DC    */
+/*подпр.обр.пс.опер.DC    */
+int F_DC()
 {
-    if (PRNMET == 'Y') /*если псевдооп.DC помеч.,*/
-    { /*то:                     */
-        if /* если псевдооперация DC */
-            (/* определяет константу   */
-                TEK_ISX_KARTA.STRUCT_BUFCARD.OPERAND[0] == 'F' /* типа F, то выполнить   */
-                ) /* следующее:             */
+    /*если псевдооп.DC помеч.,*/
+    if (LABEL_FLAG == 'Y')
+    {
+        /* если псевдооперация DC */
+        /* определяет константу   */
+        /* типа F, то выполнить   */
+        /* следующее:             */
+        if (SRC_CODE.structure.OPERAND[0] == 'F')
         {
-            T_SYM[ITSYM].DLSYM = 4; /*  уст.длину симв. =  4, */
+            T_SYM[ITSYM].SYM_LENGTH = 4; /*  уст.длину симв. =  4, */
             T_SYM[ITSYM].PRPER = 'R'; /*  а,призн.перемест.='R' */
-            if (CHADR % 4) /*  и, если CHADR не указ.*/
-            { /*  на границу слова, то: */
-                CHADR = (CHADR / 4 + 1) * 4; /*   уст.CHADR на гр.сл. и*/
-                T_SYM[ITSYM].ZNSYM = CHADR; /*   запомн. в табл.симв. */
+            /*  и, если ADDR_COUNTER не указ.*/
+            /*  на границу слова, то: */
+            if (ADDR_COUNTER % 4)
+            {
+                ADDR_COUNTER = (ADDR_COUNTER / 4 + 1) * 4; /*   уст.ADDR_COUNTER на гр.сл. и*/
+                T_SYM[ITSYM].SYM_ADDR = ADDR_COUNTER; /*   запомн. в табл.симв. */
             }
-            PRNMET = 'N'; /*  занулить PRNMET зн.'N'*/
+            LABEL_FLAG = 'N'; /*  занулить LABEL_FLAG зн.'N'*/
         }
         else
-            return (1); /* иначе выход по ошибке  */
+        {
+            return 1; /* иначе выход по ошибке  */
+        }
     }
-    else /*если же псевдооп.непомеч*/
-        if (CHADR % 4) /*и CHADR не кратен 4,то: */
-        CHADR = (CHADR / 4 + 1) * 4; /* установ.CHADR на гр.сл.*/
+    /*если же псевдооп. не помеч*/
+    /*и ADDR_COUNTER не кратен 4,то: */
+    else if (ADDR_COUNTER % 4)
+    {
+        ADDR_COUNTER = (ADDR_COUNTER / 4 + 1) * 4; /* установ.ADDR_COUNTER на гр.сл.*/
+    }
 
-    CHADR = CHADR + 4; /*увелич.CHADR на 4 и     */
-    return (0); /*успешно завершить подпр.*/
+    ADDR_COUNTER = ADDR_COUNTER + 4; /*увелич.ADDR_COUNTER на 4 и     */
+    return 0; /*успешно завершить подпр.*/
 }
 /*..........................................................................*/
-int FDS() /*подпр.обр.пс.опер.DS    */
+/*подпр.обр.пс.опер.DS    */
+int F_DS()
 {
-    if (PRNMET == 'Y') /*если псевдооп.DC помеч.,*/
-    { /*то:                     */
-        if /* если псевдооперация DC */
-            (/* определяет константу   */
-                TEK_ISX_KARTA.STRUCT_BUFCARD.OPERAND[0] == 'F' /* типа F, то выполнить   */
-                ) /* следующее:             */
+    /*если псевдооп.DC помеч.,*/
+    if (LABEL_FLAG == 'Y')
+    {
+        /* если псевдооперация DC */
+        /* определяет константу   */
+        /* типа F, то выполнить   */
+        /* следующее:             */
+        if (SRC_CODE.structure.OPERAND[0] == 'F')
         {
-            T_SYM[ITSYM].DLSYM = 4; /*  уст.длину симв. =  4, */
+            T_SYM[ITSYM].SYM_LENGTH = 4; /*  уст.длину симв. =  4, */
             T_SYM[ITSYM].PRPER = 'R'; /*  а,призн.перемест.='R' */
-            if (CHADR % 4) /*  и, если CHADR не указ.*/
-            { /*  на границу слова, то: */
-                CHADR = (CHADR / 4 + 1) * 4; /*   уст.CHADR на гр.сл. и*/
-                T_SYM[ITSYM].ZNSYM = CHADR; /*   запомн. в табл.симв. */
+            /*  и, если ADDR_COUNTER не указ.*/
+            /*  на границу слова, то: */
+            if (ADDR_COUNTER % 4)
+            {
+                ADDR_COUNTER = (ADDR_COUNTER / 4 + 1) * 4; /*   уст.ADDR_COUNTER на гр.сл. и*/
+                T_SYM[ITSYM].SYM_ADDR = ADDR_COUNTER; /*   запомн. в табл.симв. */
             }
-            PRNMET = 'N'; /*  занулить PRNMET зн.'N'*/
+            LABEL_FLAG = 'N'; /*  занулить LABEL_FLAG зн.'N'*/
         }
         else
-            return (1); /* иначе выход по ошибке  */
+        {
+            return 1; /* иначе выход по ошибке  */
+        }
     }
-    else /*если же псевдооп.непомеч*/
-        if (CHADR % 4) /*и CHADR не кратен 4,то: */
-        CHADR = (CHADR / 4 + 1) * 4; /* установ.CHADR на гр.сл.*/
+    /*если же псевдооп.непомеч*/
+    /*и ADDR_COUNTER не кратен 4,то: */
+    else if (ADDR_COUNTER % 4)
+    {
+        ADDR_COUNTER = (ADDR_COUNTER / 4 + 1) * 4; /* установ.ADDR_COUNTER на гр.сл.*/
+    }
 
-    CHADR = CHADR + 4; /*увелич.CHADR на 4 и     */
-    return (0); /*успешно завершить подпр.*/
+    ADDR_COUNTER = ADDR_COUNTER + 4; /*увелич.ADDR_COUNTER на 4 и     */
+    return 0; /*успешно завершить подпр.*/
 }
 /*..........................................................................*/
-int FEND() /*подпр.обр.пс.опер.END   */
+int F_END() /*подпр.обр.пс.опер.END   */
 {
     return (100); /*выход с призн.конца 1-го*/
     /*просмотра               */
 }
 /*..........................................................................*/
-int FEQU() /*подпр.обр.пс.опер.EQU   */
+int F_EQU() /*подпр.обр.пс.опер.EQU   */
 {
     if /*если в операнде         */
         (/*псевдооперации DC       */
-            TEK_ISX_KARTA.STRUCT_BUFCARD.OPERAND[0] == '*' /*использован симв. '*',  */
+            SRC_CODE.structure.OPERAND[0] == '*' /*использован симв. '*',  */
             ) /*то                      */
     { /* запомнить в табл.симв.:*/
-        T_SYM[ITSYM].ZNSYM = CHADR; /*  CHADR в поле ZNSYM,   */
-        T_SYM[ITSYM].DLSYM = 1; /*  1 в поле DLSYM,       */
+        T_SYM[ITSYM].SYM_ADDR = ADDR_COUNTER; /*  ADDR_COUNTER в поле SYM_ADDR,   */
+        T_SYM[ITSYM].SYM_LENGTH = 1; /*  1 в поле SYM_LENGTH,       */
         T_SYM[ITSYM].PRPER = 'R'; /*  'R' в пооле PRPER     */
     }
     else /*иначе запомн.в табл.симв*/
     { /* значение оп-нда пс.оп. */
-        T_SYM[ITSYM].ZNSYM = atoi(/* DC в поле ZNSYM,       */
-            (char*)TEK_ISX_KARTA.STRUCT_BUFCARD.OPERAND);
-        T_SYM[ITSYM].DLSYM = 1; /* 1 в поле DLSYM,        */
+        T_SYM[ITSYM].SYM_ADDR = atoi(/* DC в поле SYM_ADDR,       */
+            (char*)SRC_CODE.structure.OPERAND);
+        T_SYM[ITSYM].SYM_LENGTH = 1; /* 1 в поле SYM_LENGTH,        */
         T_SYM[ITSYM].PRPER = 'A'; /* 'A' в поле PRPER       */
     }
-    PRNMET = 'N'; /*занул.PRNMET значен.'N' */
+    LABEL_FLAG = 'N'; /*занул.LABEL_FLAG значен.'N' */
     return (0); /*успешное заверш.подпр.  */
 }
 /*..........................................................................*/
-int FSTART() /*подпр.обр.пс.опер.START */
-{ /*CHADR установить равным */
-    CHADR = /*значению операнда       */
-        atoi((char*)TEK_ISX_KARTA.STRUCT_BUFCARD.OPERAND /*псевдооперации START и, */
+int F_START() /*подпр.обр.пс.опер.START */
+{ /*ADDR_COUNTER установить равным */
+    ADDR_COUNTER = /*значению операнда       */
+        atoi((char*)SRC_CODE.structure.OPERAND /*псевдооперации START и, */
             );
-    if (CHADR % 8) /*если это значение не    */
+    if (ADDR_COUNTER % 8) /*если это значение не    */
     { /*кратно 8, то сделать его*/
-        CHADR = (CHADR + (8 - CHADR % 8)); /*кратным                 */
+        ADDR_COUNTER = (ADDR_COUNTER + (8 - ADDR_COUNTER % 8)); /*кратным                 */
     } /*запомнить в табл.симв.: */
-    T_SYM[ITSYM].ZNSYM = CHADR; /* CHADR в поле ZNSYM,    */
-    T_SYM[ITSYM].DLSYM = 1; /* 1 в поле DLSYM,        */
+    T_SYM[ITSYM].SYM_ADDR = ADDR_COUNTER; /* ADDR_COUNTER в поле SYM_ADDR,    */
+    T_SYM[ITSYM].SYM_LENGTH = 1; /* 1 в поле SYM_LENGTH,        */
     T_SYM[ITSYM].PRPER = 'R'; /* 'R' в поле PRPER       */
-    PRNMET = 'N'; /*занул.PRNMET значен.'N' */
+    LABEL_FLAG = 'N'; /*занул.LABEL_FLAG значен.'N' */
     return (0); /*успешное заверш.подпрогр*/
 }
 /*..........................................................................*/
-int FUSING() /*подпр.обр.пс.опер.USING */
+int F_USING() /*подпр.обр.пс.опер.USING */
 {
     return (0); /*успешное заверш.подпрогр*/
 }
 /*..........................................................................*/
-int FRR() /*подпр.обр.опер.RR-форм. */
+int F_RR() /*подпр.обр.опер.RR-форм. */
 {
-    CHADR = CHADR + 2; /*увеличить сч.адр. на 2  */
-    if (PRNMET == 'Y') /*если ранее обнар.метка, */
+    ADDR_COUNTER = ADDR_COUNTER + 2; /*увеличить сч.адр. на 2  */
+    if (LABEL_FLAG == 'Y') /*если ранее обнар.метка, */
     { /*то в табл. символов:    */
-        T_SYM[ITSYM].DLSYM = 2; /*запомнить длину маш.опер*/
+        T_SYM[ITSYM].SYM_LENGTH = 2; /*запомнить длину маш.опер*/
         T_SYM[ITSYM].PRPER = 'R'; /*и установить призн.перем*/
     }
     return (0); /*выйти из подпрограммы   */
 }
 /*..........................................................................*/
-int FRX() /*подпр.обр.опер.RX-форм. */
+int F_RX() /*подпр.обр.опер.RX-форм. */
 {
-    CHADR = CHADR + 4; /*увеличить сч.адр. на 4  */
-    if (PRNMET == 'Y') /*если ранее обнар.метка, */
+    ADDR_COUNTER = ADDR_COUNTER + 4; /*увеличить сч.адр. на 4  */
+    if (LABEL_FLAG == 'Y') /*если ранее обнар.метка, */
     { /*то в табл. символов:    */
-        T_SYM[ITSYM].DLSYM = 4; /*запомнить длину маш.опер*/
+        T_SYM[ITSYM].SYM_LENGTH = 4; /*запомнить длину маш.опер*/
         T_SYM[ITSYM].PRPER = 'R'; /*и установить призн.перем*/
     }
     return (0); /*выйти из подпрограммы   */
@@ -429,151 +465,198 @@ int FRX() /*подпр.обр.опер.RX-форм. */
 ******* Б Л О К  об'явлений подпрограмм, используемых при 2-ом просмотре
 */
 
-void STXT(int ARG) /*подпр.формир.TXT-карты  */
+void S_TXT(int ARG) /*подпр.формир.TXT-карты  */
 {
-    char* PTR; /*рабоч.переменная-указат.*/
+    char* pTmpStr; /*рабоч.переменная-указат.*/
 
-    PTR = (char*)&CHADR; /*формирование поля ADOP  */
-    TXT.STR_TXT.ADOP[2] = *PTR; /*TXT-карты в формате     */
-    TXT.STR_TXT.ADOP[1] = *(PTR + 1); /*двоичного целого        */
-    TXT.STR_TXT.ADOP[0] = '\x00'; /*в соглашениях ЕС ЭВМ    */
+    pTmpStr = (char*)&ADDR_COUNTER; /*формирование поля OP_ADDR  */
+    TXT.structure.OP_ADDR[2] = (unsigned char) *pTmpStr; /*TXT-карты в формате     */
+    TXT.structure.OP_ADDR[1] = (unsigned char) *(pTmpStr + 1); /*двоичного целого        */
+    TXT.structure.OP_ADDR[0] = '\x00'; /*в соглашениях ЕС ЭВМ    */
 
-    if (ARG == 2) /*формирование поля OPER  */
+    if (ARG == 2) /*формирование поля OP_BODY  */
     {
-        memset(TXT.STR_TXT.OPER, 64, 4);
-        memcpy(TXT.STR_TXT.OPER, RR.BUF_OP_RR, 2); /* для RR-формата         */
-        TXT.STR_TXT.DLNOP[1] = 2;
+        memset(TXT.structure.OP_BODY, 64, 4);
+        memcpy(TXT.structure.OP_BODY, RR.buffer, 2); /* для RR-формата         */
+        TXT.structure.OP_LENGTH[1] = 2;
     }
     else
     {
-        memcpy(TXT.STR_TXT.OPER, RX.BUF_OP_RX, 4); /* для RX-формата         */
-        TXT.STR_TXT.DLNOP[1] = 4;
+        memcpy(TXT.structure.OP_BODY, RX.buffer, 4); /* для RX-формата         */
+        TXT.structure.OP_LENGTH[1] = 4;
     }
-    memcpy(TXT.STR_TXT.POLE9, ESD.STR_ESD.POLE11, 8); /*формиров.идентифик.поля */
+    memcpy(TXT.structure.ID_FIELD, ESD.structure.ID_FIELD, 8); /*формиров.идентифик.поля */
 
-    memcpy(OBJTEXT[ITCARD], TXT.BUF_TXT, 80); /*запись об'ектной карты  */
+    memcpy(OBJTEXT[ITCARD], TXT.buffer, 80); /*запись об'ектной карты  */
+
+    // TXT 1 3 1 3 2 2 2 2 56 8
+    // FIELD_1 MAP_TYPE SPACES_1 OP_ADDR SPACES_2 OP_LENGTH SPACES_3  PROGRAM_ID OP_BODY ID_FIELD
+    printf("%1.1s|%3.3s|%1.1s|%3.3s|%2.2s|%2.2s|%2.2s|%2.2s|%56.56s|%8.8s\n",
+            " ",
+            TXT.structure.MAP_TYPE,
+            " ",
+            TXT.structure.OP_ADDR,
+            "  ",
+            TXT.structure.OP_LENGTH,
+            "  ",
+            TXT.structure.PROGRAM_ID,
+            TXT.structure.OP_BODY,
+            TXT.structure.ID_FIELD);
+
     ITCARD += 1; /*коррекц.инд-са своб.к-ты*/
-    CHADR = CHADR + ARG; /*коррекц.счетчика адреса */
-    return;
+    ADDR_COUNTER = ADDR_COUNTER + ARG;
 }
 
-int SDC() /*подпр.обр.пс.опер.DC    */
+int S_DC() /*подпр.обр.пс.опер.DC    */
 {
-    char* RAB; /*рабочая переменная      */
+    char* pTmpStr; /*рабочая переменная      */
 
-    RX.OP_RX.OP = 0; /*занулим два старших     */
-    RX.OP_RX.R1X2 = 0; /*байта RX.OP_RX          */
-    if (/* если операнд начинается*/
-        !memcmp(TEK_ISX_KARTA.STRUCT_BUFCARD.OPERAND, /* с комбинации           */
-            "F'", 2) /* F',                    */
-        ) /* то                     */
+    RX.structure.OP_CODE = 0; /*занулим два старших     */
+    RX.structure.R1_X2 = 0; /*байта RX.structure          */
+    /* если операнд начинается*/
+    /* с комбинации           */
+    /* F',                    */
+    if (memcmp(SRC_CODE.structure.OPERAND, "F'", 2) == 0)
     {
-        RAB = strtok /*в перем. c указат.RAB   */
-            (/*выбираем первую лексему */
-                (char*)TEK_ISX_KARTA.STRUCT_BUFCARD.OPERAND + 2, /*операнда текущей карты  */
-                "'" /*исх.текста АССЕМБЛЕРА   */
-                );
+        /*в перем. c указат.pTmpStr   */
+        /*выбираем первую лексему */
+        /*операнда текущей карты  */
+        /*исх.текста АССЕМБЛЕРА   */
+        pTmpStr = strtok((char*)SRC_CODE.structure.OPERAND + 2, "'");
 
-        RX.OP_RX.B2D2 = atoi(RAB); /*перевод ASCII-> int     */
-        RAB = (char*)&RX.OP_RX.B2D2; /*приведение к соглашениям*/
-        swab(RAB, RAB, 2); /* ЕС ЭВМ                 */
+        RX.structure.B2_D2 = strtol(pTmpStr, NULL, 10); /*перевод ASCII-> int     */
+        pTmpStr = (char*)&RX.structure.B2_D2; /*приведение к соглашениям*/
+        swab(pTmpStr, pTmpStr, 2); /* ЕС ЭВМ                 */
     }
-    else /*иначе                   */
-        return (1); /*сообщение об ошибке     */
+    else if (memcmp(SRC_CODE.structure.OPERAND, "E'", 2) == 0)
+    {
+        // do stuff
+        pTmpStr = strtok((char*)SRC_CODE.structure.OPERAND + 2, "'");
 
-    STXT(4); /*формирование TXT-карты  */
+    }
+    else if (memcmp(SRC_CODE.structure.OPERAND, "A(", 2) == 0)
+    {
+        // do stuff
+        pTmpStr = strtok((char*)SRC_CODE.structure.OPERAND + 2, ")");
 
+    }
+    else return 1; /*сообщение об ошибке     */
+
+    S_TXT(4); /*формирование TXT-карты  */
 
     return (0); /*успешн.завершение подпр.*/
 }
 /*..........................................................................*/
-int SDS() /*подпр.обр.пс.опер.DS    */
+int S_DS() /*подпр.обр.пс.опер.DS    */
 {
 
-    RX.OP_RX.OP = 0; /*занулим два старших     */
-    RX.OP_RX.R1X2 = 0; /*байта RX.OP_RX          */
-    if (/* если операнд начинается*/
-        TEK_ISX_KARTA.STRUCT_BUFCARD.OPERAND[0] == 'F' /* с комбинации F'        */
-        ) /* то:                    */
-        RX.OP_RX.B2D2 = 0; /*занулим RX.OP_RX.B2D2   */
-    else /*иначе                   */
+    RX.structure.OP_CODE = 0; /*занулим два старших     */
+    RX.structure.R1_X2 = 0; /*байта RX.structure          */
+    /* если операнд начинается*/
+    /* с комбинации F'        */
+    if (SRC_CODE.structure.OPERAND[0] == 'F' )
+    {
+        RX.structure.B2_D2 = 0; /*занулим RX.structure.B2_D2   */
+    }
+    else
+    {
         return (1); /*сообщение об ошибке     */
+    }
 
-    STXT(4); /*формирование TXT-карты  */
+    S_TXT(4); /*формирование TXT-карты  */
 
-    return (0); /*успешно завершить подпр.*/
+    return 0; /*успешно завершить подпр.*/
 }
 /*..........................................................................*/
-int SEND() /*подпр.обр.пс.опер.END   */
+int S_END() /*подпр.обр.пс.опер.END   */
 {
     /*формирование            */
-    memcpy(/*идентификационнго поля  */
-        END.STR_END.POLE9, /* END - карты            */
-        ESD.STR_ESD.POLE11, /*                        */
-        8 /*                        */
-        ); /*                        */
-    memcpy(/*запись об'ектной карты  */
-        OBJTEXT[ITCARD], /* в                      */
-        END.BUF_END, /* массив                 */
-        80 /* об'ектных              */
-        ); /* карт                   */
+    /*идентификационнго поля  */
+    /* END - карты            */
+    memcpy(END.structure.ID_FIELD, ESD.structure.ID_FIELD, 8);
+    /*запись об'ектной карты  */
+    /* в                      */
+    /* массив                 */
+    /* об'ектных              */
+    /* карт * */
+    memcpy(OBJTEXT[ITCARD], END.buffer, 80);
     ITCARD += 1; /*коррекц.инд-са своб.к-ты*/
     return (100); /*выход с призн.конца 2-го*/
     /*просмотра               */
 }
 /*..........................................................................*/
-int SEQU() /*подпр.обр.пс.опер.EQU   */
+int S_EQU() /*подпр.обр.пс.опер.EQU   */
 {
     return (0); /*успешное заверш.подпр.  */
 }
 /*..........................................................................*/
-int SSTART() /*подпр.обр.пс.опер.START */
+int S_START() /*подпр.обр.пс.опер.START */
 {
     char* PTR; /*набор                   */
-    char* METKA; /*рабочих                 */
-    char* METKA1; /*переменных              */
+    char* pLabel; /*рабочих                 */
+    char* pLabel_1; /*переменных              */
     int J; /*подпрограммы            */
     int RAB; /*                        */
 
-    METKA1 = strtok /*в перем. c указат.METKA1*/
-        (/*выбираем первую лексему */
-            (char*)TEK_ISX_KARTA.STRUCT_BUFCARD.METKA, /*операнда текущей карты  */
-            " " /*исх.текста АССЕМБЛЕРА   */
-            );
-    for (J = 0; J <= ITSYM; J++) /* все метки исх.текста в */
-    { /* табл. T_SYM сравниваем */
-        /* со знач.перем. *METKA1 */
-        METKA = strtok((char*)T_SYM[J].IMSYM, " ");
-        if (!strcmp(METKA, METKA1)) /* и при совпадении:      */
+    /*в перем. c указат.pLabel_1*/
+    /*выбираем первую лексему */
+    /*операнда текущей карты  */
+    /*исх.текста АССЕМБЛЕРА   */
+    pLabel_1 = strtok((char*)SRC_CODE.structure.LABEL, " ");
+    /* все метки исх.текста в */
+    /* табл. T_SYM сравниваем */
+    /* со знач.перем. *pLabel_1 */
+    for (J = 0; J <= ITSYM; J++)
+    {
+        pLabel = strtok((char*)T_SYM[J].SYM_NAME, " ");
+        /* и при совпадении:      */
+        if (strcmp(pLabel, pLabel_1) == 0)
         { /*  берем разность сч.адр.*/
-            RAB = CHADR - T_SYM[J].ZNSYM; /*  знач.этой метки, обра-*/
+            RAB = ADDR_COUNTER - T_SYM[J].SYM_ADDR; /*  знач.этой метки, обра-*/
             PTR = (char*)&RAB; /*  зуя длину программы в */
             swab(PTR, PTR, 2); /*  соглашениях ЕС ЭБМ, и */
-            ESD.STR_ESD.DLPRG[0] = 0; /*  записыв.ее в ESD-карту*/
-            ESD.STR_ESD.DLPRG[1] = *PTR; /*  побайтно              */
-            ESD.STR_ESD.DLPRG[2] = *(PTR + 1); /*                        */
-            CHADR = T_SYM[J].ZNSYM; /*устанавл.CHADR, равным  */
+            ESD.structure.PROGRAM_LENGTH[0] = 0; /*  записыв.ее в ESD-карту*/
+            ESD.structure.PROGRAM_LENGTH[1] = *PTR; /*  побайтно              */
+            ESD.structure.PROGRAM_LENGTH[2] = *(PTR + 1); /*                        */
+            ADDR_COUNTER = T_SYM[J].SYM_ADDR; /*устанавл.ADDR_COUNTER, равным  */
             /*операнду операт.START   */
             /*исходного текста        */
-            PTR = (char*)&CHADR; /*формирование поля ADPRG */
-            ESD.STR_ESD.ADPRG[2] = *PTR; /*ESD-карты в формате     */
-            ESD.STR_ESD.ADPRG[1] = *(PTR + 1); /*двоичного целого        */
-            ESD.STR_ESD.ADPRG[0] = '\x00'; /*в соглашениях ЕС ЭВМ    */
-            memcpy(/*формирование            */
-                ESD.STR_ESD.IMPR, /* имени программы        */
-                METKA, /*  и                     */
-                strlen(METKA) /*                        */
-                ); /*                        */
-            memcpy(/*идентификационнго поля  */
-                ESD.STR_ESD.POLE11, /* ESD - карты            */
-                METKA, /*                        */
-                strlen(METKA) /*                        */
-                ); /*                        */
-            memcpy(/*запись об'ектной карты  */
-                OBJTEXT[ITCARD], /* в                      */
-                ESD.BUF_ESD, /* массив                 */
-                80 /* об'ектных              */
-                ); /* карт                   */
+            PTR = (char*)&ADDR_COUNTER; /*формирование поля PROGRAM_ADDR */
+            ESD.structure.PROGRAM_ADDR[2] = *PTR; /*ESD-карты в формате     */
+            ESD.structure.PROGRAM_ADDR[1] = *(PTR + 1); /*двоичного целого        */
+            ESD.structure.PROGRAM_ADDR[0] = '\x00'; /*в соглашениях ЕС ЭВМ    */
+            /*формирование            */
+            /* имени программы        */
+            /*  и                     */
+            /*                        */
+            memcpy(ESD.structure.PROGRAM_NAME, pLabel, strlen(pLabel));
+            /*идентификационнго поля  */
+            /* ESD - карты            */
+            memcpy(ESD.structure.ID_FIELD, pLabel, strlen(pLabel));
+            /*запись об'ектной карты  */
+            /* в                      */
+            /* массив                 */
+            /* об'ектных              */
+            /* карт                   */
+            memcpy(OBJTEXT[ITCARD], ESD.buffer, 80);
+
+            // ESD 1 3 6 2 2 2 8 1 3 1 3 40 8
+            // FIELD_1 MAP_TYPE SPACES_1 DATA_LENGTH SPACES_2 PROGRAM_ID PROGRAM_NAME TYPE_CODE PROGRAM_ADDR SPACES_3 PROGRAM_LENGTH SPACES_4 ID_FIELD
+            printf("%1.1s|%3.3s|%6.6s|%2.2s|%2.2s|%2.2s|%8.8s|%c|%3.3s|%1.1s|%3.3s|%40.40s|%8.8s\n",
+                   " ", // 1
+                   ESD.structure.MAP_TYPE, // 3
+                   "      ", // 6
+                   ESD.structure.DATA_LENGTH, // 2
+                   "  ", // 2
+                   ESD.structure.PROGRAM_ID, // 2
+                   ESD.structure.PROGRAM_NAME, // 8
+                   ESD.structure.TYPE_CODE, // 1
+                   ESD.structure.PROGRAM_ADDR, // 3
+                   " ", // 1
+                   ESD.structure.PROGRAM_LENGTH, // 3
+                   " ", // 40
+                   ESD.structure.ID_FIELD); // 8
+
             ITCARD += 1; /*коррекц.инд-са своб.к-ты*/
             return (0); /*успешное заверш.подпрогр*/
         }
@@ -581,7 +664,7 @@ int SSTART() /*подпр.обр.пс.опер.START */
     return (2); /*ошибочное заверш.прогр. */
 }
 /*..........................................................................*/
-int SUSING() /*подпр.обр.пс.опер.USING */
+int S_USING() /*подпр.обр.пс.опер.USING */
 {
     /*набор                   */
     char* METKA; /*рабочих                 */
@@ -591,7 +674,7 @@ int SUSING() /*подпр.обр.пс.опер.USING */
     int NBASRG; /*                        */
     METKA1 = strtok /*в перем. c указат.METKA1*/
         (/*выбираем первую лексему */
-            (char*)TEK_ISX_KARTA.STRUCT_BUFCARD.OPERAND, /*операнда текущей карты  */
+            (char*)SRC_CODE.structure.OPERAND, /*операнда текущей карты  */
             "," /*исх.текста АССЕМБЛЕРА   */
             );
     METKA2 = strtok /*в перем. c указат.METKA2*/
@@ -605,11 +688,11 @@ int SUSING() /*подпр.обр.пс.опер.USING */
         for (J = 0; J <= ITSYM; J++) /* все метки исх.текста в */
         { /* табл. T_SYM сравниваем */
             /* со знач.перем. *METKA2 */
-            METKA = strtok((char*)T_SYM[J].IMSYM, " ");
+            METKA = strtok((char*)T_SYM[J].SYM_NAME, " ");
             if (!strcmp(METKA, METKA2)) /* и при совпадении:      */
             { /*  запоминаем значение   */
-                if ((NBASRG = T_SYM[J].ZNSYM) <= 0x0f) /*  метки в NBASRG и в сл.*/
-                    goto SUSING1; /*  NBASRG <= 0x0f идем на*/
+                if ((NBASRG = T_SYM[J].SYM_ADDR) <= 0x0f) /*  метки в NBASRG и в сл.*/
+                    goto S_USING1; /*  NBASRG <= 0x0f идем на*/
                 /*  устан.регистра базы   */
                 else /* иначе:                 */
                     return (6); /*  сообщение об ошибке   */
@@ -620,28 +703,28 @@ int SUSING() /*подпр.обр.пс.опер.USING */
     else /*иначе, если второй опер.*/
     { /*начинается с цифры, то: */
         NBASRG = atoi(METKA2); /* запомним его в NBASRG  */
-            if ((NBASRG = T_SYM[J].ZNSYM) <= 0x0f) /* и,если он <= 0x0f,то:  */
-            goto SUSING1; /* идем на устан.рег.базы */
+            if ((NBASRG = T_SYM[J].SYM_ADDR) <= 0x0f) /* и,если он <= 0x0f,то:  */
+            goto S_USING1; /* идем на устан.рег.базы */
         else /*иначе:                  */
             return (6); /* сообщение об ошибке    */
     }
 
-SUSING1: /*установить базовый рег. */
+S_USING1: /*установить базовый рег. */
 
-    T_BASR[NBASRG - 1].PRDOST = 'Y'; /* взвести призн.активн.  */
+    BASE_REGS_TABLE[NBASRG - 1].PRDOST = 'Y'; /* взвести призн.активн.  */
     if (*METKA1 == '*') /* если перв.оп-нд == '*',*/
     {
-        T_BASR[NBASRG - 1].SMESH = CHADR; /* выбир.знач.базы ==CHADR*/
+        BASE_REGS_TABLE[NBASRG - 1].OFFSET = ADDR_COUNTER; /* выбир.знач.базы ==ADDR_COUNTER*/
     }
     else /*иначе:                  */
     {
         for (J = 0; J <= ITSYM; J++) /* все метки исх.текста в */
         { /* табл. T_SYM сравниваем */
             /* со знач.перем. *METKA1 */
-            METKA = strtok((char*)T_SYM[J].IMSYM, " ");
+            METKA = strtok((char*)T_SYM[J].SYM_NAME, " ");
             if (!strcmp(METKA, METKA1)) /* и при совпадении:      */
             { /*  берем значение этой   */
-                T_BASR[NBASRG - 1].SMESH = T_SYM[J].ZNSYM; /*  этой метки как базу   */
+                BASE_REGS_TABLE[NBASRG - 1].OFFSET = T_SYM[J].SYM_ADDR; /*  этой метки как базу   */
             }
         }
         return (2); /*завершение прогр.по ошиб*/
@@ -649,18 +732,18 @@ SUSING1: /*установить базовый рег. */
     return (0); /*успешное заверш.подпрогр*/
 }
 /*..........................................................................*/
-int SRR() /*подпр.обр.опер.RR-форм. */
+int S_RR() /*подпр.обр.опер.RR-форм. */
 {
     char* METKA; /*набор                   */
     char* METKA1; /*рабочих                 */
     char* METKA2; /*переменных              */
     unsigned char R1R2; /*                        */
     int J; /*                        */
-    RR.OP_RR.OP = T_MOP[I3].CODOP; /*формирование кода операц*/
+    RR.structure.OP_CODE = OP_TABLE[k].OP_CODE; /*формирование кода операц*/
 
     METKA1 = strtok /*в перем. c указат.METKA1*/
         (/*выбираем первую лексему */
-            (char*)TEK_ISX_KARTA.STRUCT_BUFCARD.OPERAND, /*операнда текущей карты  */
+            (char*)SRC_CODE.structure.OPERAND, /*операнда текущей карты  */
             "," /*исх.текста АССЕМБЛЕРА   */
             );
 
@@ -675,11 +758,11 @@ int SRR() /*подпр.обр.опер.RR-форм. */
         for (J = 0; J <= ITSYM; J++) /* все метки исх.текста в */
         { /* табл. T_SYM сравниваем */
             /* со знач.перем. *METKA1 */
-            METKA = strtok((char*)T_SYM[J].IMSYM, " ");
+            METKA = strtok((char*)T_SYM[J].SYM_NAME, " ");
             if (!strcmp(METKA, METKA1)) /* и при совпадении:      */
             { /*  берем значение этой   */
-                R1R2 = T_SYM[J].ZNSYM << 4; /*  метки в качестве перв.*/
-                goto SRR1;
+                R1R2 = T_SYM[J].SYM_ADDR << 4; /*  метки в качестве перв.*/
+                goto S_RR1;
             } /*  опреранда машинной ком*/
         }
         return (2); /*сообщ."необ'явл.идентиф"*/
@@ -690,7 +773,7 @@ int SRR() /*подпр.обр.опер.RR-форм. */
     }
 
 
-SRR1:
+S_RR1:
 
 
     if (isalpha((int)*METKA2)) /*если лексема начинается */
@@ -698,10 +781,10 @@ SRR1:
         for (J = 0; J <= ITSYM; J++) /* все метки исх.текста в */
         { /* табл. T_SYM сравниваем */
             /* со знач.перем. *МЕТКА2 */
-            METKA = strtok((char*)T_SYM[J].IMSYM, " ");
+            METKA = strtok((char*)T_SYM[J].SYM_NAME, " ");
             if (!strcmp(METKA, METKA2)) /* и при совпадении:      */
             { /*  берем значение этой   */
-                R1R2 = R1R2 + T_SYM[J].ZNSYM; /*  метки в качестве втор.*/
+                R1R2 = R1R2 + T_SYM[J].SYM_ADDR; /*  метки в качестве втор.*/
                 goto SRR2; /*                        */
             } /*  опреранда машинной ком*/
         } /*                        */
@@ -714,15 +797,14 @@ SRR1:
 
 SRR2:
 
-    RR.OP_RR.R1R2 = R1R2; /*формируем опер-ды маш-ой*/
+    RR.structure.R1_R2 = R1R2; /*формируем опер-ды маш-ой*/
     /*команды                 */
 
-    STXT(2);
+    S_TXT(2);
     return (0); /*выйти из подпрограммы   */
 }
-
 /*..........................................................................*/
-int SRX() /*подпр.обр.опер.RX-форм. */
+int S_RX() /*подпр.обр.опер.RX-форм. */
 {
     char* METKA; /*набор                   */
     char* METKA1; /*рабочих                 */
@@ -735,10 +817,10 @@ int SRX() /*подпр.обр.опер.RX-форм. */
     int I; /*                        */
     unsigned char R1X2; /*                        */
     int B2D2; /*                        */
-    RX.OP_RX.OP = T_MOP[I3].CODOP; /*формирование кода операц*/
+    RX.structure.OP_CODE = OP_TABLE[k].OP_CODE; /*формирование кода операц*/
     METKA1 = strtok /*в перем. c указат.METKA1*/
         (/*выбираем первую лексему */
-            (char*)TEK_ISX_KARTA.STRUCT_BUFCARD.OPERAND, /*операнда текущей карты  */
+            (char*)SRC_CODE.structure.OPERAND, /*операнда текущей карты  */
             "," /*исх.текста АССЕМБЛЕРА   */
             );
 
@@ -752,13 +834,13 @@ int SRX() /*подпр.обр.опер.RX-форм. */
     { /*с буквы, то:            */
         for (J = 0; J <= ITSYM; J++) /* все метки исх.текста в */
         { /* табл. T_SYM сравниваем */
-            /* со знач.перем. *METKA  */
-            METKA = strtok((char*)T_SYM[J].IMSYM, " ");
+            /* со знач.перем. *LABEL  */
+            METKA = strtok((char*)T_SYM[J].SYM_NAME, " ");
             if (!strcmp(METKA, METKA1)) /* и при совпадении:      */
 
             { /*  берем значение этой   */
-                R1X2 = T_SYM[J].ZNSYM << 4; /*  метки в качестве перв.*/
-                goto SRX1;
+                R1X2 = T_SYM[J].SYM_ADDR << 4; /*  метки в качестве перв.*/
+                goto S_RX1;
             } /*  опреранда машинной ком*/
         }
         return (2); /*сообщ."необ'явл.идентиф"*/
@@ -769,7 +851,7 @@ int SRX() /*подпр.обр.опер.RX-форм. */
     }
 
 
-SRX1:
+S_RX1:
 
 
     if (isalpha((int)*METKA2)) /*если лексема начинается */
@@ -777,24 +859,24 @@ SRX1:
         for (J = 0; J <= ITSYM; J++) /* все метки исх.текста в */
         { /* табл. T_SYM сравниваем */
             /* со знач.перем. *МЕТКА  */
-            METKA = strtok((char*)T_SYM[J].IMSYM, " ");
+            METKA = strtok((char*)T_SYM[J].SYM_NAME, " ");
             if (!strcmp(METKA, METKA2)) /* и при совпадении:      */
             { /*  установить нач.знач.: */
                 NBASRG = 0; /*   номера базов.регистра*/
                 DELTA = 0xfff - 1; /*   и его значен.,а также*/
-                ZNSYM = T_SYM[J].ZNSYM; /*   смещен.втор.операнда */
+                ZNSYM = T_SYM[J].SYM_ADDR; /*   смещен.втор.операнда */
                 for (I = 0; I < 15; I++) /*далее в цикле из всех   */
                 { /*рег-ров выберем базовым */
                     if (/*тот, который имеет:     */
-                        T_BASR[I].PRDOST == 'Y' /* призн.активности,      */
+                        BASE_REGS_TABLE[I].PRDOST == 'Y' /* призн.активности,      */
                         && /*  и                     */
-                        ZNSYM - T_BASR[I].SMESH >= 0 /* значенение, меньшее по */
+                        ZNSYM - BASE_REGS_TABLE[I].OFFSET >= 0 /* значенение, меньшее по */
                         && /* величине,но наиболее   */
-                        ZNSYM - T_BASR[I].SMESH < DELTA /* близкое к смещению вто-*/
+                        ZNSYM - BASE_REGS_TABLE[I].OFFSET < DELTA /* близкое к смещению вто-*/
                         ) /* рого операнда          */
                     {
                         NBASRG = I + 1;
-                        DELTA = ZNSYM - T_BASR[I].SMESH;
+                        DELTA = ZNSYM - BASE_REGS_TABLE[I].OFFSET;
                     }
                 }
                 if (NBASRG == 0 || DELTA > 0xfff) /*если баз.рег.не выбр.,то*/
@@ -802,12 +884,12 @@ SRX1:
                 else /*иначе                   */
                 { /* сформировыать машинное */
                     B2D2 = NBASRG << 12; /* представление второго  */
-                    B2D2 = B2D2 + DELTA; /* операнда в виде B2D2   */
+                    B2D2 = B2D2 + DELTA; /* операнда в виде B2_D2   */
                     PTR = (char*)&B2D2; /* и в соглашениях ЕС ЭВМ */
                     swab(PTR, PTR, 2); /* с записью в тело ком-ды*/
-                    RX.OP_RX.B2D2 = B2D2;
+                    RX.structure.B2_D2 = B2D2;
                 }
-                goto SRX2; /*перех.на форм.первого   */
+                goto S_RX2; /*перех.на форм.первого   */
             } /*  опреранда машинной ком*/
         }
         return (2); /*сообщ."необ'явл.идентиф"*/
@@ -817,45 +899,51 @@ SRX1:
         return (4); /*значен.выбр.   лексемы  */
     }
 
-SRX2:
+S_RX2:
 
-    RX.OP_RX.R1X2 = R1X2; /*дозапись перв.операнда  */
+    RX.structure.R1_X2 = R1X2; /*дозапись перв.операнда  */
 
-    STXT(4); /*формирование TXT-карты  */
+    S_TXT(4); /*формирование TXT-карты  */
     return (0); /*выйти из подпрограммы   */
 }
-
-struct globalArgs_t {
-    const char *outFileName;
-    const char *inFileName;
-    int verbosity;
-} globalArgs;
- 
-static const char *optString = "i:o:v";
-
 /*..........................................................................*/
 /*подпрогр.формир.об'екн. */
 /*файла                   */
-int SOBJFILE() 
+int S_OBJFILE()
 { 
     /*набор рабочих           */
     /*переменных              */
-    FILE* fp; 
+    FILE* pFile;
     int RAB2; 
     /*формирование пути и име-*/
     /*ни об'ектного файла     */
     
     /*при неудачн.открыт.ф-ла */
-    if ((fp = fopen(globalArgs.outFileName, "wb")) == NULL) 
+    if ((pFile = fopen(globalArgs.outFileName, "wb")) == NULL)
     /* сообщение об ошибке    */
         return (-7);
     else /*иначе:                  */
-        RAB2 = fwrite(OBJTEXT, 80, ITCARD, fp); /* формируем тело об.файла*/
-    fclose(fp); /*закрываем об'ектный файл*/
+        RAB2 = (int) fwrite(OBJTEXT, 80, (size_t) ITCARD, pFile); /* формируем тело об.файла*/
+
+    fclose(pFile); /*закрываем об'ектный файл*/
+
+    pFile = fopen("userfrendly_obj.txt", "wt");
+    for (int i = 0; i < ITCARD; i++)
+    {
+        fprintf(pFile, "%3.3s|%3.3s|%2.2s|%2.2s|%56.56s|%8.8s\n",
+                TXT_BUFF[i].MAP_TYPE, /*поле типа об'ектн.карты */
+                TXT_BUFF[i].OP_ADDR, /*относит.адрес опреации  */
+                TXT_BUFF[i].OP_LENGTH, /*длина операции          */
+                TXT_BUFF[i].PROGRAM_ID, /*внутренний идент.прогр. */
+                TXT_BUFF[i].OP_BODY, /*тело операции           */
+                TXT_BUFF[i].ID_FIELD /*идентификационное поле  */);
+    }
+    fclose(pFile);
+
     return (RAB2); /*завершаем  подпрограмму */
 }
 /*..........................................................................*/
-void INITUNION()
+void INIT()
 {
 
     /*
@@ -863,48 +951,48 @@ void INITUNION()
     *****                             для выходного объектного файла
     */
 
-    ESD.STR_ESD.POLE1 = 0x02;
-    memcpy(ESD.STR_ESD.POLE2, "ESD", 3);
-    memset(ESD.STR_ESD.POLE3, 0x40, 6);
-    ESD.STR_ESD.POLE31[0] = 0x00;
-    ESD.STR_ESD.POLE31[1] = 0x10;
-    memset(ESD.STR_ESD.POLE32, 0x40, 2);
-    ESD.STR_ESD.POLE4[0] = 0x00;
-    ESD.STR_ESD.POLE4[1] = 0x01;
-    memset(ESD.STR_ESD.IMPR, 0x40, 8);
-    ESD.STR_ESD.POLE6 = 0x00;
-    memset(ESD.STR_ESD.ADPRG, 0x00, 3);
-    ESD.STR_ESD.POLE8 = 0x40;
-    memset(ESD.STR_ESD.DLPRG, 0x00, 3);
-    memset(ESD.STR_ESD.POLE10, 0x40, 40);
-    memset(ESD.STR_ESD.POLE11, 0x40, 8);
+    ESD.structure.FIELD_1 = 0x02;
+    memcpy(ESD.structure.MAP_TYPE, "ESD", 3);
+    memset(ESD.structure.SPACES_1, 0x40, 6);
+    ESD.structure.DATA_LENGTH[0] = 0x00;
+    ESD.structure.DATA_LENGTH[1] = 0x10;
+    memset(ESD.structure.SPACES_2, 0x40, 2);
+    ESD.structure.PROGRAM_ID[0] = 0x00;
+    ESD.structure.PROGRAM_ID[1] = 0x01;
+    memset(ESD.structure.PROGRAM_NAME, 0x40, 8);
+    ESD.structure.TYPE_CODE = 0x00;
+    memset(ESD.structure.PROGRAM_ADDR, 0x00, 3);
+    ESD.structure.SPACES_3 = 0x40;
+    memset(ESD.structure.PROGRAM_LENGTH, 0x00, 3);
+    memset(ESD.structure.SPACES_4, 0x40, 40);
+    memset(ESD.structure.ID_FIELD, 0x40, 8);
 
     /*
     ***** и н и ц и а л и з а ц и я   полей буфера формирования записей TXT-типа
     *****                             для выходного объектного файла
     */
 
-    TXT.STR_TXT.POLE1 = 0x02;
-    memcpy(TXT.STR_TXT.POLE2, "TXT", 3);
-    TXT.STR_TXT.POLE3 = 0x40;
-    memset(TXT.STR_TXT.ADOP, 0x00, 3);
-    memset(TXT.STR_TXT.POLE5, 0x40, 2);
-    memset(TXT.STR_TXT.DLNOP, 0X00, 2);
-    memset(TXT.STR_TXT.POLE7, 0x40, 2);
-    TXT.STR_TXT.POLE71[0] = 0x00;
-    TXT.STR_TXT.POLE71[1] = 0x01;
-    memset(TXT.STR_TXT.OPER, 0x40, 56);
-    memset(TXT.STR_TXT.POLE9, 0x40, 8);
+    TXT.structure.FIELD_1 = 0x02;
+    memcpy(TXT.structure.MAP_TYPE, "TXT", 3);
+    TXT.structure.SPACES_1 = 0x40;
+    memset(TXT.structure.OP_ADDR, 0x00, 3);
+    memset(TXT.structure.SPACES_2, 0x40, 2);
+    memset(TXT.structure.OP_LENGTH, 0X00, 2);
+    memset(TXT.structure.SPACES_3, 0x40, 2);
+    TXT.structure.PROGRAM_ID[0] = 0x00;
+    TXT.structure.PROGRAM_ID[1] = 0x01;
+    memset(TXT.structure.OP_BODY, 0x40, 56);
+    memset(TXT.structure.ID_FIELD, 0x40, 8);
 
     /*
     ***** и н и ц и а л и з а ц и я   полей буфера формирования записей END-типа
     *****                             для выходного объектного файла
     */
 
-    END.STR_END.POLE1 = 0x02;
-    memcpy(END.STR_END.POLE2, "END", 3);
-    memset(END.STR_END.POLE3, 0x40, 68);
-    memset(END.STR_END.POLE9, 0x40, 8);
+    END.structure.FIELD_1 = 0x02;
+    memcpy(END.structure.MAP_TYPE, "END", 3);
+    memset(END.structure.SPACES_1, 0x40, 68);
+    memset(END.structure.ID_FIELD, 0x40, 8);
 }
 
 /*..........................................................................*/
@@ -915,29 +1003,11 @@ int main(int argc, char* argv[])
 {
     FILE* fp = NULL;
 
-    unsigned char ASSTEXT[DL_ASSTEXT][80];
+    unsigned char ASM_TEXT[ASM_TEXT_LEN][80];
 
-    /*
-    ******* Б Л О К  об'явлений рабочих переменных
-    */
+    int i, j, RAB; /* переменные цикла      */
 
-    int I1, I2, RAB; /* переменные цикла      */
-
-    INITUNION(); /* начальное заполнение  */
-    /* буферов формирования  */
-    /* записей выходного объ-*/
-    /* ектного  файла        */
-
-    /*
-    ******       Н А Ч А Л О   П Е Р В О Г О  П Р О С М О Т Р А      *****
-    */
-    /*
-    ***** Б Л О К  инициализации массива ASSTEXT, заменяющий иниц-ю в об'явлении
-    *****          (введен как реакция на требования BORLANDC++ 2.0)
-    */
-
-
-     int opt = 0;
+    int opt = 0;
      
     globalArgs.inFileName = NULL;
     globalArgs.outFileName = NULL;
@@ -964,33 +1034,46 @@ int main(int argc, char* argv[])
     }
 
 
+    /* начальное заполнение  */
+    /* буферов формирования  */
+    /* записей выходного объ-*/
+    /* ектного  файла        */
+    INIT();
+
+
     if ((fp = fopen(globalArgs.inFileName, "r")) == NULL)
     {
         printf("%s\n", "No source file found");
         return -1;
     }
-    else
+
+
+    /*
+    ***** Б Л О К  инициализации массива ASM_TEXT, заменяющий иниц-ю в об'явлении
+    *****          (введен как реакция на требования BORLANDC++ 2.0)
+    */
+
+
+    for (i = 0; i <= ASM_TEXT_LEN; i++)
     {
-        for (I1 = 0; I1 <= DL_ASSTEXT; I1++)
+        char trash[2];
+        if (fread(ASM_TEXT[i], sizeof(char), 80, fp)!= 80 || fread(trash, sizeof(char), 2, fp) != 2)
         {
-            char trash[2];
-            if (fread(ASSTEXT[I1], sizeof(char), 80, fp)!= 80 || fread(trash, sizeof(char), 2, fp) != 2)
+
+            if (feof(fp))
+                goto main1;
+            else
             {
-
-                if (feof(fp))
-                    goto main1;
-                else
-                {
-                    printf("%s\n", "Error reading source file");
-                    return -1;
-                }
+                printf("%s\n", "Error reading source file");
+                return -1;
             }
-            printf("%.80s <<\n", ASSTEXT[I1]);
         }
-
-        printf("%s\n", "Read buffer is overflow");
-        return -1;
+        printf("%.80s <<\n", ASM_TEXT[i]);
     }
+
+    printf("%s\n", "Read buffer is overflow");
+    return -1;
+
     
 
 main1:
@@ -1002,26 +1085,45 @@ main1:
     ***** К О Н Е Ц блока инициализации
     */
 
+    /*
+    ******       Н А Ч А Л О   П Е Р В О Г О  П Р О С М О Т Р А      *****
+    */
+
+    OP_TABLE[0].CALLBACK = F_RR; /*установить указатели    */
+    OP_TABLE[1].CALLBACK = F_RR; /*на подпрограммы обраб-ки*/
+    OP_TABLE[2].CALLBACK = F_RX; /*команд АССЕМБЛЕРА при   */
+    OP_TABLE[3].CALLBACK = F_RX; /*первом просмотре        */
+    OP_TABLE[4].CALLBACK = F_RX;
+    OP_TABLE[5].CALLBACK = F_RX;
+
+    PSEUDO_OP_TABLE[0].CALLBACK = F_DC; /*установить указатели    */
+    PSEUDO_OP_TABLE[1].CALLBACK = F_DS; /*на подпрограммы обраб-ки*/
+    PSEUDO_OP_TABLE[2].CALLBACK = F_END; /*псевдокоманд АССЕМБЛЕРА */
+    PSEUDO_OP_TABLE[3].CALLBACK = F_EQU; /*при первом просмотре    */
+    PSEUDO_OP_TABLE[4].CALLBACK = F_START;
+    PSEUDO_OP_TABLE[5].CALLBACK = F_USING;
+
+
     /*для карт с 1 по конечную*/
-    for (I1 = 0; I1 < DL_ASSTEXT; I1++) 
+    for (i = 0; i < ASM_TEXT_LEN; i++)
     { 
         /*ч-ть очередн.карту в буф*/
-        memcpy(TEK_ISX_KARTA.BUFCARD, ASSTEXT[I1], 80); 
+        memcpy(SRC_CODE.buffer, ASM_TEXT[i], 80);
         /*переход при отсутствии  */
         /*метки                   */
         /*на CONT1,               */
-        if (TEK_ISX_KARTA.STRUCT_BUFCARD.METKA[0] == ' ') 
+        if (SRC_CODE.structure.LABEL[0] == ' ')
             goto CONT1; 
         /*иначе:                  */
         /* переход к след.стр.TSYM*/
         /* устан.призн.налич.метки*/
-        ITSYM += 1; 
-        PRNMET = 'Y'; 
+        ITSYM++;
+        LABEL_FLAG = 'Y';
         /* запомнить имя символа  */
         /* и                      */
         /* его значение(отн.адр.) */
-        memcpy(T_SYM[ITSYM].IMSYM, TEK_ISX_KARTA.STRUCT_BUFCARD.METKA, 8);
-        T_SYM[ITSYM].ZNSYM = CHADR; 
+        memcpy(T_SYM[ITSYM].SYM_NAME, SRC_CODE.structure.LABEL, 8);
+        T_SYM[ITSYM].SYM_ADDR = ADDR_COUNTER;
 
     /*
     ***** Б Л О К  поиска текущей операции среди псевдоопераций
@@ -1029,15 +1131,15 @@ main1:
 
     CONT1:
 
-        for (I2 = 0; I2 < NPOP; I2++) /*для всех стр.таб.пс.опер*/
-        { /*выполнить следущее:     */
-            if (/* если                   */
-                !memcmp(TEK_ISX_KARTA.STRUCT_BUFCARD.OPERAC, /* псевдооперация         */
-                    T_POP[I2].MNCPOP, 5) /* распознана,            */
-                ) /* то:                    */
-            /*                        */
+        /*для всех стр.таб.пс.опер*/
+        for (j = 0; j < N_PSEUDO_OPS; j++)
+        {
+            /* если                   */
+            /* псевдооперация         */
+            /* распознана,            */
+            if (!memcmp(SRC_CODE.structure.OPERATION, PSEUDO_OP_TABLE[j].PSEUDO_OP_NAME, 5))
             {
-                switch (T_POP[I2].BXPROG()) /* уйти в подпр.обработки */
+                switch (PSEUDO_OP_TABLE[j].CALLBACK()) /* уйти в подпр.обработки */
                 {
                     case 0:
                         goto CONT2; /* и завершить цикл       */
@@ -1045,20 +1147,21 @@ main1:
                         goto ERR1;
                     case 100:
                         goto CONT3;
+                    default:break;
                 }
-            } /*                        */
-        } /*                        */
+            }
+        }
 
-        for (I3 = 0; I3 < NOP; I3++) /*для всех стр.таб.м.опер.*/
-        { /*выполнить следующее:    */
-            if (/* если                   */
-                !memcmp(TEK_ISX_KARTA.STRUCT_BUFCARD.OPERAC, /* машинная операция      */
-                    T_MOP[I3].MNCOP, 5) /* распознана,            */
-                ) /* то:                    */
-            /*                        */
+        /*для всех стр.таб.м.опер.*/
+        for (k = 0; k < N_OPS; k++)
+        {
+            /* если                   */
+            /* машинная операция      */
+            /* распознана,            */
+            if (!memcmp(SRC_CODE.structure.OPERATION, OP_TABLE[k].OP_NAME, 5))
             {
-                T_MOP[I3].BXPROG(); /* уйти в подпр.обработки */
-                PRNMET = 'N'; /* снять призн.налич.метки*/
+                OP_TABLE[k].CALLBACK(); /* уйти в подпр.обработки */
+                LABEL_FLAG = 'N'; /* снять призн.налич.метки*/
                 goto CONT2; /* и завершить цикл       */
             }
         }
@@ -1077,52 +1180,54 @@ main1:
 
 CONT3:
 
-    T_MOP[0].BXPROG = SRR; /*установить указатели    */
-    T_MOP[1].BXPROG = SRR; /*на подпрограммы обраб-ки*/
-    T_MOP[2].BXPROG = SRX; /*команд АССЕМБЛЕРА при   */
-    T_MOP[3].BXPROG = SRX; /*втором просмотре        */
-    T_MOP[4].BXPROG = SRX;
-    T_MOP[5].BXPROG = SRX;
+    OP_TABLE[0].CALLBACK = S_RR; /*установить указатели    */
+    OP_TABLE[1].CALLBACK = S_RR; /*на подпрограммы обраб-ки*/
+    OP_TABLE[2].CALLBACK = S_RX; /*команд АССЕМБЛЕРА при   */
+    OP_TABLE[3].CALLBACK = S_RX; /*втором просмотре        */
+    OP_TABLE[4].CALLBACK = S_RX;
+    OP_TABLE[5].CALLBACK = S_RX;
 
-    T_POP[0].BXPROG = SDC; /*установить указатели    */
-    T_POP[1].BXPROG = SDS; /*на подпрограммы обраб-ки*/
-    T_POP[2].BXPROG = SEND; /*псевдокоманд АССЕМБЛЕРА */
-    T_POP[3].BXPROG = SEQU; /*при втором просмотре    */
-    T_POP[4].BXPROG = SSTART;
-    T_POP[5].BXPROG = SUSING;
+    PSEUDO_OP_TABLE[0].CALLBACK = S_DC; /*установить указатели    */
+    PSEUDO_OP_TABLE[1].CALLBACK = S_DS; /*на подпрограммы обраб-ки*/
+    PSEUDO_OP_TABLE[2].CALLBACK = S_END; /*псевдокоманд АССЕМБЛЕРА */
+    PSEUDO_OP_TABLE[3].CALLBACK = S_EQU; /*при втором просмотре    */
+    PSEUDO_OP_TABLE[4].CALLBACK = S_START;
+    PSEUDO_OP_TABLE[5].CALLBACK = S_USING;
 
-    for (I1 = 0; I1 < DL_ASSTEXT; I1++) /*для карт с 1 по конечную*/
+    /*для карт с 1 по конечную*/
+    for (i = 0; i < ASM_TEXT_LEN; i++)
     { /*                        */
-        memcpy(TEK_ISX_KARTA.BUFCARD, ASSTEXT[I1], /*ч-ть очередн.карту в буф*/
-            80); /*                        */
+        /*ч-ть очередн.карту в буф*/
+        memcpy(SRC_CODE.buffer, ASM_TEXT[i], 80);
+
         /*
         ***** Б Л О К  поиска текущей операции среди псевдоопераций
         */
 
-        for (I2 = 0; I2 < NPOP; I2++) /*для всех стр.таб.пс.опер*/
-        { /*выполнить следущее:     */
-            if (/* если                   */
-                !memcmp(TEK_ISX_KARTA.STRUCT_BUFCARD.OPERAC, /* псевдооперация         */
-                    T_POP[I2].MNCPOP, 5) /* распознана,            */
-                ) /* то                     */
-            /*                        */
+        for (j = 0; j < N_PSEUDO_OPS; j++) /*для всех стр.таб.пс.опер*/
+        {
+            /* если                   */
+            /* псевдооперация         */
+            /* распознана,            */
+            if (!memcmp(SRC_CODE.structure.OPERATION, PSEUDO_OP_TABLE[j].PSEUDO_OP_NAME, 5))
             {
-                switch (T_POP[I2].BXPROG()) /* уйти в подпр.обработки */
+                switch (PSEUDO_OP_TABLE[j].CALLBACK()) /* уйти в подпр.обработки */
                 {
                     case 0:
                         goto CONT4; /* и завершить цикл       */
                     case 100: /*уйти на формирование    */
                         goto CONT5; /*об'ектного файла        */
+                    default:break;
                 }
-            } /*                        */
-        } /*                        */
+            }
+        }
 
-        for (I3 = 0; I3 < NOP; I3++) /*для всех стр.таб.м.опер. выполнить следующее: */
+        for (k = 0; k < N_OPS; k++) /*для всех стр.таб.м.опер. выполнить следующее: */
         {
             /* если  машинная операция распознана */
-            if (!memcmp(TEK_ISX_KARTA.STRUCT_BUFCARD.OPERAC, T_MOP[I3].MNCOP, 5))
+            if (!memcmp(SRC_CODE.structure.OPERATION, OP_TABLE[k].OP_NAME, 5))
             {
-                switch (T_MOP[I3].BXPROG()) /* уйти в подпр.обработки */
+                switch (OP_TABLE[k].CALLBACK()) /* уйти в подпр.обработки */
                 {
                     case 0:
                         goto CONT4; /* и завершить цикл       */
@@ -1141,6 +1246,7 @@ CONT3:
 
                     case 7: /*выдать диагностическое  */
                         goto ERR6; /*сообщение               */
+                    default:break;
                 }
             }
         }
@@ -1150,8 +1256,10 @@ CONT3:
     } /*карт исх.текста         */
 
 CONT5:
-    if (ITCARD == (RAB = SOBJFILE())) 
+    if (ITCARD == (RAB = S_OBJFILE()))
+    {
         printf("%s\n", "успешое завершение трансляции");
+    }
     else 
     {
         if (RAB == -7)
@@ -1162,36 +1270,36 @@ CONT5:
     return 0;
 
 ERR1:
-    printf("%s: %.80s\n", "ошибка формата данных", ASSTEXT[I1]);
+    printf("%s: %.80s\n", "ошибка формата данных", ASM_TEXT[i]);
     goto CONT6;
 
 ERR2:
-    printf("%s: %.80s\n", "необ'явленный идентификатор", ASSTEXT[I1]);
+    printf("%s: %.80s\n", "необ'явленный идентификатор", ASM_TEXT[i]);
     goto CONT6;
 
 ERR3:
-    printf("%s: %.80s\n", "ошибка кода операции", ASSTEXT[I1]);
+    printf("%s: %.80s\n", "ошибка кода операции", ASM_TEXT[i]);
     goto CONT6;
 
 ERR4:
-    printf("%s: %.80s\n", "ошибка второго операнда",   ASSTEXT[I1]); /*выдать диагностич.сообщ.*/
+    printf("%s: %.80s\n", "ошибка второго операнда",   ASM_TEXT[i]); /*выдать диагностич.сообщ.*/
     goto CONT6;
 
 ERR5:
-    printf("%s: %.80s\n", "ошибка базирования",  ASSTEXT[I1]); /*выдать диагностич.сообщ.*/
+    printf("%s: %.80s\n", "ошибка базирования",  ASM_TEXT[i]); /*выдать диагностич.сообщ.*/
     goto CONT6;
 
 ERR6:
-    printf("%s: %.80s\n", "недопустимый номер регистра", ASSTEXT[I1]); /*выдать диагностич.сообщ.*/
+    printf("%s: %.80s\n", "недопустимый номер регистра", ASM_TEXT[i]); /*выдать диагностич.сообщ.*/
     goto CONT6;
 
 ERR7:
-    printf("%s: %.80s\n", "ошибка открытия об'ектн.файла", ASSTEXT[I1]); /*выдать диагностич.сообщ.*/
+    printf("%s: %.80s\n", "ошибка открытия об'ектн.файла", ASM_TEXT[i]); /*выдать диагностич.сообщ.*/
     goto CONT6;
 
 
 CONT6:
-    printf("%s%d\n", "ошибка в карте N ", I1 + 1); /*выдать диагностич.сообщ.*/
+    printf("%s%d\n", "ошибка в карте N ", i + 1); /*выдать диагностич.сообщ.*/
 
     return 0;
 } /*конец main-программы    */
