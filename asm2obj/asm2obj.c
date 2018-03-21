@@ -9,6 +9,8 @@
 #include <ctype.h> /*вкл.подпр.классиф.симв. */
 #include <unistd.h>
 
+#include "ibm360_types.h"
+
 /*
 ******* Б Л О К  об'явлений статических рабочих переменных
 */
@@ -37,7 +39,7 @@ int F_DC(); /*подпр.обр.пс.опер.DC    */
 int F_DS(); /*подпр.обр.пс.опер.DS    */
 /*..........................................................................*/
 /*п р о т о т и п  обращ.к*/
-int F_END(); /*подпр.обр.пс.опер.END   */
+int F_END(); /*подпр.обр.пс.опер.end_map   */
 /*..........................................................................*/
 /*п р о т о т и п  обращ.к*/
 int F_EQU(); /*подпр.обр.пс.опер.EQU   */
@@ -66,7 +68,7 @@ int S_DC(); /*подпр.обр.пс.опер.DC    */
 int S_DS(); /*подпр.обр.пс.опер.DS    */
 /*..........................................................................*/
 /*п р о т о т и п  обращ.к*/
-int S_END(); /*подпр.обр.пс.опер.END   */
+int S_END(); /*подпр.обр.пс.опер.end_map   */
 /*..........................................................................*/
 /*п р о т о т и п  обращ.к*/
 int S_EQU(); /*подпр.обр.пс.опер.EQU   */
@@ -241,72 +243,33 @@ union /*определить об'единение  */
     struct OP_RX structure; /*структурировать его     */
 } RX;
 
-struct STR_BUF_ESD /*структ.буфера карты ESD */
+
+
+union
 {
-    unsigned char FIELD_1; /*место для кода 0x02     */
-    unsigned char MAP_TYPE[3]; /*поле типа об'ектн.карты */
-    unsigned char SPACES_1[6]; /*пробелы                 */
-    unsigned char DATA_LENGTH[2]; /*длина данных на карте   */
-    unsigned char SPACES_2[2]; /*пробелы                 */
-    unsigned char PROGRAM_ID[2]; /*внутр.ид-р имени прогр. */
-    unsigned char PROGRAM_NAME[8]; /*имя программы           */
-    unsigned char TYPE_CODE; /*код типа ESD-имени      */
-    unsigned char PROGRAM_ADDR[3]; /*относит.адрес программы */
-    unsigned char SPACES_3; /*пробелы                 */
-    unsigned char PROGRAM_LENGTH[3]; /*длина программы         */
-    unsigned char SPACES_4[40]; /*пробелы                 */
-    unsigned char ID_FIELD[8]; /*идентификационное поле  */
-};
+    ESD structure;
+    unsigned char buffer[80];
+} esd_map;
 
-// ESD 1 3 6 2 2 2 8 1 3 1 3 40 8
-// FIELD_1 MAP_TYPE SPACES_1 DATA_LENGTH SPACES_2 PROGRAM_ID PROGRAM_NAME TYPE_CODE PROGRAM_ADDR SPACES_3 PROGRAM_LENGTH SPACES_4 ID_FIELD
-
-struct STR_BUF_TXT /*структ.буфера карты TXT */
+union
 {
-    unsigned char FIELD_1; /*место для кода 0x02     */
-    unsigned char MAP_TYPE[3]; /*поле типа об'ектн.карты */
-    unsigned char SPACES_1; /*пробел                  */
-    unsigned char OP_ADDR[3]; /*относит.адрес опреации  */
-    unsigned char SPACES_2[2]; /*пробелы                 */
-    unsigned char OP_LENGTH[2]; /*длина операции          */
-    unsigned char SPACES_3[2]; /*пробелы                 */
-    unsigned char PROGRAM_ID[2]; /*внутренний идент.прогр. */
-    unsigned char OP_BODY[56]; /*тело операции           */
-    unsigned char ID_FIELD[8]; /*идентификационное поле  */
-};
-// TXT 1 3 1 3 2 2 2 2 56 8
-// FIELD_1 MAP_TYPE SPACES_1 OP_ADDR SPACES_2 OP_LENGTH SPACES_3  PROGRAM_ID OP_BODY ID_FIELD
-struct STR_BUF_END /*структ.буфера карты END */
+    RLD structure;
+    unsigned char buffer[80];
+} rld_map;
+
+union
 {
-    unsigned char FIELD_1; /*место для кода 0x02     */
-    unsigned char MAP_TYPE[3]; /*поле типа об'ектн.карты */
-    unsigned char SPACES_1[68]; /*пробелы                 */
-    unsigned char ID_FIELD[8]; /*идентификационное поле  */
-};
+    TXT structure;
+    unsigned char buffer[80];
+} txt_map;
 
-union /*определить об'единение  */
+union
 {
-    struct STR_BUF_ESD structure; /*структура буфера        */
-    unsigned char buffer[80]; /*буфер карты ESD         */
-} ESD;
+    END structure;
+    unsigned char buffer[80];
+} end_map;
 
-struct STR_BUF_ESD ESD_BUFF[1];
 
-union /*определить об'единение  */
-{
-    struct STR_BUF_TXT structure; /*структура буфера        */
-    unsigned char buffer[80]; /*буфер карты TXT         */
-} TXT;
-
-struct STR_BUF_TXT TXT_BUFF[OBJTEXT_LEN];
-
-union /*определить об'единение  */
-{
-    struct STR_BUF_END structure; /*структура буфера        */
-    unsigned char buffer[80]; /*буфер карты ESD         */
-} END;
-
-struct STR_BUF_END END_BUFF[1];
 
 /*
 ******* Б Л О К  об'явлений подпрограмм, используемых при 1-ом просмотре
@@ -389,7 +352,7 @@ int F_DS()
     return 0; /*успешно завершить подпр.*/
 }
 /*..........................................................................*/
-int F_END() /*подпр.обр.пс.опер.END   */
+int F_END() /*подпр.обр.пс.опер.end_map   */
 {
     return (100); /*выход с призн.конца 1-го*/
     /*просмотра               */
@@ -465,43 +428,43 @@ int F_RX() /*подпр.обр.опер.RX-форм. */
 ******* Б Л О К  об'явлений подпрограмм, используемых при 2-ом просмотре
 */
 
-void S_TXT(int ARG) /*подпр.формир.TXT-карты  */
+void S_TXT(int ARG) /*подпр.формир.txt_map-карты  */
 {
     char* pTmpStr; /*рабоч.переменная-указат.*/
 
     pTmpStr = (char*)&ADDR_COUNTER; /*формирование поля OP_ADDR  */
-    TXT.structure.OP_ADDR[2] = (unsigned char) *pTmpStr; /*TXT-карты в формате     */
-    TXT.structure.OP_ADDR[1] = (unsigned char) *(pTmpStr + 1); /*двоичного целого        */
-    TXT.structure.OP_ADDR[0] = '\x00'; /*в соглашениях ЕС ЭВМ    */
+    txt_map.structure.OP_ADDR[2] = (unsigned char) *pTmpStr; /*txt_map-карты в формате     */
+    txt_map.structure.OP_ADDR[1] = (unsigned char) *(pTmpStr + 1); /*двоичного целого        */
+    txt_map.structure.OP_ADDR[0] = '\x00'; /*в соглашениях ЕС ЭВМ    */
 
     if (ARG == 2) /*формирование поля OP_BODY  */
     {
-        memset(TXT.structure.OP_BODY, 64, 4);
-        memcpy(TXT.structure.OP_BODY, RR.buffer, 2); /* для RR-формата         */
-        TXT.structure.OP_LENGTH[1] = 2;
+        memset(txt_map.structure.OP_BODY, 64, 4);
+        memcpy(txt_map.structure.OP_BODY, RR.buffer, 2); /* для RR-формата         */
+        txt_map.structure.OP_LENGTH[1] = 2;
     }
     else
     {
-        memcpy(TXT.structure.OP_BODY, RX.buffer, 4); /* для RX-формата         */
-        TXT.structure.OP_LENGTH[1] = 4;
+        memcpy(txt_map.structure.OP_BODY, RX.buffer, 4); /* для RX-формата         */
+        txt_map.structure.OP_LENGTH[1] = 4;
     }
-    memcpy(TXT.structure.ID_FIELD, ESD.structure.ID_FIELD, 8); /*формиров.идентифик.поля */
+    memcpy(txt_map.structure.ID_FIELD, esd_map.structure.ID_FIELD, 8); /*формиров.идентифик.поля */
 
-    memcpy(OBJTEXT[ITCARD], TXT.buffer, 80); /*запись об'ектной карты  */
+    memcpy(OBJTEXT[ITCARD], txt_map.buffer, 80); /*запись об'ектной карты  */
 
-    // TXT 1 3 1 3 2 2 2 2 56 8
+    // txt_map 1 3 1 3 2 2 2 2 56 8
     // FIELD_1 MAP_TYPE SPACES_1 OP_ADDR SPACES_2 OP_LENGTH SPACES_3  PROGRAM_ID OP_BODY ID_FIELD
     printf("%1.1s|%3.3s|%1.1s|%3.3s|%2.2s|%2.2s|%2.2s|%2.2s|%56.56s|%8.8s\n",
             " ",
-            TXT.structure.MAP_TYPE,
+            txt_map.structure.MAP_TYPE,
             " ",
-            TXT.structure.OP_ADDR,
+            txt_map.structure.OP_ADDR,
             "  ",
-            TXT.structure.OP_LENGTH,
+            txt_map.structure.OP_LENGTH,
             "  ",
-            TXT.structure.PROGRAM_ID,
-            TXT.structure.OP_BODY,
-            TXT.structure.ID_FIELD);
+            txt_map.structure.ID_NUM,
+            txt_map.structure.OP_BODY,
+            txt_map.structure.ID_FIELD);
 
     ITCARD += 1; /*коррекц.инд-са своб.к-ты*/
     ADDR_COUNTER = ADDR_COUNTER + ARG;
@@ -542,7 +505,7 @@ int S_DC() /*подпр.обр.пс.опер.DC    */
     }
     else return 1; /*сообщение об ошибке     */
 
-    S_TXT(4); /*формирование TXT-карты  */
+    S_TXT(4); /*формирование txt_map-карты  */
 
     return (0); /*успешн.завершение подпр.*/
 }
@@ -563,23 +526,23 @@ int S_DS() /*подпр.обр.пс.опер.DS    */
         return (1); /*сообщение об ошибке     */
     }
 
-    S_TXT(4); /*формирование TXT-карты  */
+    S_TXT(4); /*формирование txt_map-карты  */
 
     return 0; /*успешно завершить подпр.*/
 }
 /*..........................................................................*/
-int S_END() /*подпр.обр.пс.опер.END   */
+int S_END() /*подпр.обр.пс.опер.end_map   */
 {
     /*формирование            */
     /*идентификационнго поля  */
-    /* END - карты            */
-    memcpy(END.structure.ID_FIELD, ESD.structure.ID_FIELD, 8);
+    /* end_map - карты            */
+    memcpy(end_map.structure.ID_FIELD, esd_map.structure.ID_FIELD, 8);
     /*запись об'ектной карты  */
     /* в                      */
     /* массив                 */
     /* об'ектных              */
     /* карт * */
-    memcpy(OBJTEXT[ITCARD], END.buffer, 80);
+    memcpy(OBJTEXT[ITCARD], end_map.buffer, 80);
     ITCARD += 1; /*коррекц.инд-са своб.к-ты*/
     return (100); /*выход с призн.конца 2-го*/
     /*просмотра               */
@@ -615,47 +578,30 @@ int S_START() /*подпр.обр.пс.опер.START */
             RAB = ADDR_COUNTER - T_SYM[J].SYM_ADDR; /*  знач.этой метки, обра-*/
             PTR = (char*)&RAB; /*  зуя длину программы в */
             swab(PTR, PTR, 2); /*  соглашениях ЕС ЭБМ, и */
-            ESD.structure.PROGRAM_LENGTH[0] = 0; /*  записыв.ее в ESD-карту*/
-            ESD.structure.PROGRAM_LENGTH[1] = *PTR; /*  побайтно              */
-            ESD.structure.PROGRAM_LENGTH[2] = *(PTR + 1); /*                        */
+            esd_map.structure.LENGTH[0] = 0; /*  записыв.ее в esd_map-карту*/
+            esd_map.structure.LENGTH[1] = *PTR; /*  побайтно              */
+            esd_map.structure.LENGTH[2] = *(PTR + 1); /*                        */
             ADDR_COUNTER = T_SYM[J].SYM_ADDR; /*устанавл.ADDR_COUNTER, равным  */
             /*операнду операт.START   */
             /*исходного текста        */
-            PTR = (char*)&ADDR_COUNTER; /*формирование поля PROGRAM_ADDR */
-            ESD.structure.PROGRAM_ADDR[2] = *PTR; /*ESD-карты в формате     */
-            ESD.structure.PROGRAM_ADDR[1] = *(PTR + 1); /*двоичного целого        */
-            ESD.structure.PROGRAM_ADDR[0] = '\x00'; /*в соглашениях ЕС ЭВМ    */
+            PTR = (char*)&ADDR_COUNTER; /*формирование поля R_ADDR */
+            esd_map.structure.R_ADDR[2] = *PTR; /*esd_map-карты в формате     */
+            esd_map.structure.R_ADDR[1] = *(PTR + 1); /*двоичного целого        */
+            esd_map.structure.R_ADDR[0] = '\x00'; /*в соглашениях ЕС ЭВМ    */
             /*формирование            */
             /* имени программы        */
             /*  и                     */
             /*                        */
-            memcpy(ESD.structure.PROGRAM_NAME, pLabel, strlen(pLabel));
+            memcpy(esd_map.structure.SYM_NAME, pLabel, strlen(pLabel));
             /*идентификационнго поля  */
-            /* ESD - карты            */
-            memcpy(ESD.structure.ID_FIELD, pLabel, strlen(pLabel));
+            /* esd_map - карты            */
+            memcpy(esd_map.structure.ID_FIELD, pLabel, strlen(pLabel));
             /*запись об'ектной карты  */
             /* в                      */
             /* массив                 */
             /* об'ектных              */
             /* карт                   */
-            memcpy(OBJTEXT[ITCARD], ESD.buffer, 80);
-
-            // ESD 1 3 6 2 2 2 8 1 3 1 3 40 8
-            // FIELD_1 MAP_TYPE SPACES_1 DATA_LENGTH SPACES_2 PROGRAM_ID PROGRAM_NAME TYPE_CODE PROGRAM_ADDR SPACES_3 PROGRAM_LENGTH SPACES_4 ID_FIELD
-            printf("%1.1s|%3.3s|%6.6s|%2.2s|%2.2s|%2.2s|%8.8s|%c|%3.3s|%1.1s|%3.3s|%40.40s|%8.8s\n",
-                   " ", // 1
-                   ESD.structure.MAP_TYPE, // 3
-                   "      ", // 6
-                   ESD.structure.DATA_LENGTH, // 2
-                   "  ", // 2
-                   ESD.structure.PROGRAM_ID, // 2
-                   ESD.structure.PROGRAM_NAME, // 8
-                   ESD.structure.TYPE_CODE, // 1
-                   ESD.structure.PROGRAM_ADDR, // 3
-                   " ", // 1
-                   ESD.structure.PROGRAM_LENGTH, // 3
-                   " ", // 40
-                   ESD.structure.ID_FIELD); // 8
+            memcpy(OBJTEXT[ITCARD], esd_map.buffer, 80);
 
             ITCARD += 1; /*коррекц.инд-са своб.к-ты*/
             return (0); /*успешное заверш.подпрогр*/
@@ -903,7 +849,7 @@ S_RX2:
 
     RX.structure.R1_X2 = R1X2; /*дозапись перв.операнда  */
 
-    S_TXT(4); /*формирование TXT-карты  */
+    S_TXT(4); /*формирование txt_map-карты  */
     return (0); /*выйти из подпрограммы   */
 }
 /*..........................................................................*/
@@ -926,20 +872,6 @@ int S_OBJFILE()
         RAB2 = (int) fwrite(OBJTEXT, 80, (size_t) ITCARD, pFile); /* формируем тело об.файла*/
 
     fclose(pFile); /*закрываем об'ектный файл*/
-
-    pFile = fopen("userfrendly_obj.txt", "wt");
-    for (int i = 0; i < ITCARD; i++)
-    {
-        fprintf(pFile, "%3.3s|%3.3s|%2.2s|%2.2s|%56.56s|%8.8s\n",
-                TXT_BUFF[i].MAP_TYPE, /*поле типа об'ектн.карты */
-                TXT_BUFF[i].OP_ADDR, /*относит.адрес опреации  */
-                TXT_BUFF[i].OP_LENGTH, /*длина операции          */
-                TXT_BUFF[i].PROGRAM_ID, /*внутренний идент.прогр. */
-                TXT_BUFF[i].OP_BODY, /*тело операции           */
-                TXT_BUFF[i].ID_FIELD /*идентификационное поле  */);
-    }
-    fclose(pFile);
-
     return (RAB2); /*завершаем  подпрограмму */
 }
 /*..........................................................................*/
@@ -947,52 +879,49 @@ void INIT()
 {
 
     /*
-    ***** и н и ц и а л и з а ц и я   полей буфера формирования записей ESD-типа
+    ***** и н и ц и а л и з а ц и я   полей буфера формирования записей esd_map-типа
     *****                             для выходного объектного файла
     */
 
-    ESD.structure.FIELD_1 = 0x02;
-    memcpy(ESD.structure.MAP_TYPE, "ESD", 3);
-    memset(ESD.structure.SPACES_1, 0x40, 6);
-    ESD.structure.DATA_LENGTH[0] = 0x00;
-    ESD.structure.DATA_LENGTH[1] = 0x10;
-    memset(ESD.structure.SPACES_2, 0x40, 2);
-    ESD.structure.PROGRAM_ID[0] = 0x00;
-    ESD.structure.PROGRAM_ID[1] = 0x01;
-    memset(ESD.structure.PROGRAM_NAME, 0x40, 8);
-    ESD.structure.TYPE_CODE = 0x00;
-    memset(ESD.structure.PROGRAM_ADDR, 0x00, 3);
-    ESD.structure.SPACES_3 = 0x40;
-    memset(ESD.structure.PROGRAM_LENGTH, 0x00, 3);
-    memset(ESD.structure.SPACES_4, 0x40, 40);
-    memset(ESD.structure.ID_FIELD, 0x40, 8);
+    esd_map.structure.PADDING1 = 0x02;
+    memcpy(esd_map.structure.MAP_TYPE, "ESD", 3);
+    memset(esd_map.structure.PADDING2, 0x40, 10);
+    esd_map.structure.ID_NUM[0] = 0x00;
+    esd_map.structure.ID_NUM[1] = 0x01;
+    memset(esd_map.structure.SYM_NAME, 0x40, 8);
+    esd_map.structure.SYM_TYPE = 0x00;
+    memset(esd_map.structure.R_ADDR, 0x00, 3);
+    esd_map.structure.PADDING3 = 0x40;
+    memset(esd_map.structure.LENGTH, 0x00, 3);
+    memset(esd_map.structure.PADDING4, 0x40, 40);
+    memset(esd_map.structure.ID_FIELD, 0x40, 8);
 
     /*
-    ***** и н и ц и а л и з а ц и я   полей буфера формирования записей TXT-типа
+    ***** и н и ц и а л и з а ц и я   полей буфера формирования записей txt_map-типа
     *****                             для выходного объектного файла
     */
 
-    TXT.structure.FIELD_1 = 0x02;
-    memcpy(TXT.structure.MAP_TYPE, "TXT", 3);
-    TXT.structure.SPACES_1 = 0x40;
-    memset(TXT.structure.OP_ADDR, 0x00, 3);
-    memset(TXT.structure.SPACES_2, 0x40, 2);
-    memset(TXT.structure.OP_LENGTH, 0X00, 2);
-    memset(TXT.structure.SPACES_3, 0x40, 2);
-    TXT.structure.PROGRAM_ID[0] = 0x00;
-    TXT.structure.PROGRAM_ID[1] = 0x01;
-    memset(TXT.structure.OP_BODY, 0x40, 56);
-    memset(TXT.structure.ID_FIELD, 0x40, 8);
+    txt_map.structure.PADDING1 = 0x02;
+    memcpy(txt_map.structure.MAP_TYPE, "TXT", 3);
+    txt_map.structure.PADDING2 = 0x40;
+    memset(txt_map.structure.OP_ADDR, 0x00, 3);
+    memset(txt_map.structure.PADDING3, 0x40, 2);
+    memset(txt_map.structure.OP_LENGTH, 0X00, 2);
+    memset(txt_map.structure.PADDING4, 0x40, 2);
+    txt_map.structure.ID_NUM[0] = 0x00;
+    txt_map.structure.ID_NUM[1] = 0x01;
+    memset(txt_map.structure.OP_BODY, 0x40, 56);
+    memset(txt_map.structure.ID_FIELD, 0x40, 8);
 
     /*
-    ***** и н и ц и а л и з а ц и я   полей буфера формирования записей END-типа
+    ***** и н и ц и а л и з а ц и я   полей буфера формирования записей end_map-типа
     *****                             для выходного объектного файла
     */
 
-    END.structure.FIELD_1 = 0x02;
-    memcpy(END.structure.MAP_TYPE, "END", 3);
-    memset(END.structure.SPACES_1, 0x40, 68);
-    memset(END.structure.ID_FIELD, 0x40, 8);
+    end_map.structure.PADDING1 = 0x02;
+    memcpy(end_map.structure.MAP_TYPE, "END", 3);
+    memset(end_map.structure.PADDING2, 0x40, 68);
+    memset(end_map.structure.ID_FIELD, 0x40, 8);
 }
 
 /*..........................................................................*/

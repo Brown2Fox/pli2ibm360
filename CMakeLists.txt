@@ -8,6 +8,8 @@ set(ASM2OBJ_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/asm2obj/asm2obj.c)
 set(IBM360VM_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/ibm360vm/ibm360vm.c)
 set(PLI2ASM_V1_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/pli2asm_v1/pli2asm_v1.c)
 
+include_directories(include)
+
 find_package(BISON REQUIRED)
 find_package(FLEX REQUIRED)
 BISON_TARGET(PARSER ${CMAKE_CURRENT_SOURCE_DIR}/pli2asm/pli2asm.y ${CMAKE_CURRENT_SOURCE_DIR}/${BUILD_DIR}/pli2asm.parser.c)
