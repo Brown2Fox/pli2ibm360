@@ -4,15 +4,15 @@ PL1_FILE_NAME=examppl.pli
 ASM_FILE_NAME=compiled.asm
 OBJ_FILE_NAME=builded.bin
 
-all: o1 o2 o3
+all: pli asm ibm
 
 
-o1: 
+pli: 
 	cd $(DIR) && ./pli2asm_v1 -i ../$(PL1_FILE_NAME) -o $(ASM_FILE_NAME) -v
 
-o2: 
+asm: 
 	cd $(DIR) && ./asm2obj -i $(ASM_FILE_NAME) -o $(OBJ_FILE_NAME) -v
 
-o3: 
+ibm: 
 	cd $(DIR) && ./ibm360vm -i $(OBJ_FILE_NAME)
 
