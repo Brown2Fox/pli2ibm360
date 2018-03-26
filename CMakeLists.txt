@@ -12,6 +12,8 @@ set(IBM360VM_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/ibm360vm/ibm360vm.c)
 set(PLI2ASM_V1_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/pli2asm_v1/pli2asm_v1.c)
 
 include_directories(include)
+include_directories(asm2obj/Operations)
+include_directories(asm2obj/Cards)
 
 find_package(BISON REQUIRED)
 find_package(FLEX REQUIRED)
