@@ -8,7 +8,7 @@
 #include "RR.hpp"
 
 class BCR: public RR {
-public ctors:
+public:
     BCR(): RR(0, '\x07', "BCR  ") {};
 };
 

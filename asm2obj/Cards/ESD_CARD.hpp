@@ -16,20 +16,20 @@
 
 class ESD_CARD: public Card
 {
-
-    struct ESD_T /*структ.буфера карты ESD */
+ 
+    struct
     {
-        uint8_t PADDING1     = 0x40; /*место для кода 0x02     */
-        uint8_t CARD_TYPE[3] = {'E','S','D'}; /*поле типа об'ектн.карты */
-        uint8_t PADDING2[10] = {0x40}; /*пробелы               */
-        uint8_t ID_NUM[2]    = {0x00, 0x00}; /*внутр.ид-р имени прогр. */
-        uint8_t SYM_NAME[8]  = {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '};/*имя программы           */
-        uint8_t ESD_TYPE     = 0; /*код типа ESD-имени      */
-        uint8_t R_ADDR[3]    = {0x00, 0x00, 0x00}; /*относит.адрес программы */
-        uint8_t PADDING3     = {0x40}; /*пробелы                 */
-        uint8_t PR_LENGTH[3] = {0x00, 0x00, 0x00}; /*длина программы         */
-        uint8_t PADDING4[40] = {0x40}; /*пробелы                 */
-        uint8_t ID_FIELD[8]  = {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '}; /*идентификационное поле  */
+        uint8_t PADDING1     = 0x02;
+        uint8_t CARD_TYPE[3] = {'E','S','D'};
+        uint8_t PADDING2[10] = {[0 ...  9] = 0x40};
+        uint8_t ID_NUM[2]    = {[0 ...  1] = 0x40};
+        uint8_t SYM_NAME[8]  = {[0 ...  7] = 0x40};
+        uint8_t ESD_TYPE     = 0x40;
+        uint8_t R_ADDR[3]    = {[0 ...  2] = 0x40};
+        uint8_t PADDING3     = 0x40;
+        uint8_t PR_LENGTH[3] = {[0 ...  2] = 0x40};
+        uint8_t PADDING4[40] = {[0 ... 39] = 0x40};
+        uint8_t ID_FIELD[8]  = {[0 ...  7] = 0x40};
     } card;
 
 public:
@@ -64,16 +64,13 @@ public:
             card.R_ADDR[2] = 0;
         }
 
-
-
         memcpy(card.SYM_NAME, sym_name, 8);
-        memcpy(card.ID_FIELD, sym_name, 8);
+        //memcpy(card.ID_FIELD, sym_name, 8);
 
 
         card.ID_NUM[0] = static_cast<uint8_t>(ID_NUM >> 8);
         card.ID_NUM[1] = static_cast<uint8_t>(ID_NUM);
         ID_NUM++;
-
 
 
         printf("%s\n\n", getFormatOutput().c_str());

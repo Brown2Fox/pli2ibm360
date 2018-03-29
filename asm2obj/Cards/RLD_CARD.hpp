@@ -17,18 +17,18 @@
 class RLD_CARD: public Card
 {
 
-    struct RLD_T
+    struct
     {
         uint8_t PADDING1       = 0x02; /*место для кода 0x02        */
         uint8_t CARD_TYPE[3]   = {'R','L','D'}; /*поле типа об'ектн.карты     */
         uint8_t PADDING2       = 0x40; /*пробел                     */
-        uint8_t ID_NUM[2]      = {0x00,0x00};/*внутр.ид-р имени прогр.    */
-        uint8_t PADDING3[3]    = {0x40, 0x40, 0x40};/*пробелы                 */
+        uint8_t ID_NUM[2]      = {[0 ... 1] = 0x40};/*внутр.ид-р имени прогр.    */
+        uint8_t PADDING3[3]    = {[0 ... 2] = 0x40};/*пробелы                 */
         uint8_t SIGN[2]        = {0x0, 0xC};/*знак операции               */
-        uint8_t PADDING4[4]    = {0x40, 0x40, 0x40, 0x40};/*пробелы                 */
-        uint8_t OFFSET_ADDR[3] = {0x00, 0x00, 0x00}; /*адрес                   */
-        uint8_t PADDING5[53]   = {0x40};
-        uint8_t ID_FIELD[8]    = {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '}; /*идентификационное поле */
+        uint8_t PADDING4[4]    = {[0 ... 3] = 0x40};/*пробелы                 */
+        uint8_t OFFSET_ADDR[3] = {[0 ... 2] = 0x40}; /*адрес                   */
+        uint8_t PADDING5[53]   = {[0 ... 52] = 0x40};
+        uint8_t ID_FIELD[8]    = {[0 ... 7] = 0x40}; /*идентификационное поле */
     } card;
 
 
@@ -48,7 +48,7 @@ public:
         card.ID_NUM[1] = static_cast<uint8_t>(ID_NUM);
         ID_NUM++;
 
-        memcpy(card.ID_FIELD, id_field, 8);
+        //memcpy(card.ID_FIELD, id_field, 8);
 
         printf("%s\n\n", getFormatOutput().c_str());
     }

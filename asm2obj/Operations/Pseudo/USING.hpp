@@ -9,13 +9,17 @@
 
 class USING: public Operation
 {
-public ctors:
+public:
+
     USING(): Operation(1, '\x00', "USING") {};
-public methods:
+
+public:
+
     int process1(Params& p) override
     {
-        return 0; /*успешное заверш.подпрогр*/
+        return 0;
     }
+
     int process2(Params& p) override
     {
         char* sym_name_asm_1 = nullptr;

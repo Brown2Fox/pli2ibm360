@@ -11,31 +11,38 @@
 
 class RX: public Operation {
 
-protected fields:
+    typedef struct { uint8_t OP_CODE; uint8_t R1_X2; uint16_t B2_D2; } OP_RX;
+
+protected:
+
     union {
-        unsigned char buffer[4];
+        uint8_t buffer[4];
         OP_RX structure;
     } rx;
 
-protected ctors:
+protected:
+
     RX() { op_len = 4; }
-    RX(uint8 op_type, uint8 op_code, const char* op_name) :  Operation(op_type, op_code, op_name) {
+    RX(uint8_t op_type, uint8_t op_code, const char* op_name) :  Operation(op_type, op_code, op_name) {
         op_len = 4;
     };
-public methods:
+
+public:
+
     int process1(Params& p) override
     {
-        if (p.label_flag == 'Y') /*если ранее обнар.метка, */
+        if (p.label_flag == 'Y')
         {
             with(p.symbols.back(), sym)
-                sym.length = this->op_len;
+                sym.length = op_len;
                 sym.transfer_flag = 'R';
                 printf("RX: sym_tablea << val: %i, len: %i, name: %.8s}\n", sym.val, sym.length, sym.name);
             end_with;
         }
-//        addr_counter += this->op_len;
+
         return op_len;
     }
+
     int process2(Params& p) override
     {
         uint8_t id_field[8] = {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '};
@@ -74,8 +81,9 @@ public methods:
             }
             assertf(found, "Symbol not found: %s", sym_name_asm_1);
         }
-        else /*иначе, берем в качестве */
-        { /*перв.операнда машинн.ком*/
+        else
+        {
+            // FIXME: RX magic
 //            R1X2 = strtol(sym_name_asm_1, nullptr, 10) << 4; /*значен.выбр.   лексемы  */
             RegNum = (uint8_t) strtol(sym_name_asm_1, nullptr, 10);
         }
@@ -120,11 +128,11 @@ public methods:
 
 
         rx.structure.R1_X2 = RegNum; /*дозапись перв.операнда  */
-        // FIXME: magic
+        // FIXME: RX magic
 //                    B2D2 = basereg_num;
 //                    PTR_ = (char*)&B2D2; /* и в соглашениях ЕС ЭВМ */
 //                    swab(PTR_, PTR_, 2); /* с записью в тело ком-ды*/
-        rx.structure.B2_D2 = (BaseRegNum << BITS) + Displacement;
+        rx.structure.B2_D2 = static_cast<uint16_t>((BaseRegNum << BITS) + Displacement);
 
 
         printf("RX: oper=%.5s, regnum=%x, baseregnum=%i(%i), disp=%i | op_len=%i\n",
@@ -135,7 +143,7 @@ public methods:
                Displacement, op_len);
 
         p.cards.push_back( std::shared_ptr<Card>( new TXT_CARD(this->op_len, p.addr_counter, rx.buffer, id_field)) );
-//        addr_counter += this->op_len;
+
         return op_len;
     }
 };

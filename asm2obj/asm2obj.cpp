@@ -9,7 +9,7 @@
 #include <memory>
 #include <fstream>
 
-#include "ibm360_types.h"
+#include "ibm360_types.hpp"
 #include "Regular/BALR.hpp"
 #include "Regular/BCR.hpp"
 #include "Regular/ST.hpp"
@@ -26,8 +26,8 @@
 #include <Pseudo/EXTRN.hpp>
 
 struct {
-    std::vector<std::string> outFileNames;
-    std::vector<std::string> inFileNames;
+    std::vector<std::string> outFileNames = {};
+    std::vector<std::string> inFileNames = {};
     bool verbosity = false;
 } gl_args;
 
@@ -62,7 +62,7 @@ void parse_args(int argc, char* argv[])
 class Compiler
 {
 
-private fields:
+private:
 
     typedef std::shared_ptr< Operation > OpPtr;
     std::vector< OpPtr > operations = {
@@ -102,14 +102,14 @@ private fields:
     std::vector<TSYM> symbols;
     char label_flag =  'N';
 
-    uint32 addr_counter = 0;
+    uint32_t addr_counter = 0;
 
     std::vector<asm_mapping_u> asm_lines;
 
     typedef std::shared_ptr<Card> CardPtr;
     std::vector< CardPtr > cards;
 
-public ctors:
+public:
 
     Compiler()
     {
@@ -118,7 +118,7 @@ public ctors:
         RLD_CARD::ID_NUM = 1;
     };
 
-public methods:
+public:
 
     int first_iterate()
     {
@@ -153,14 +153,13 @@ public methods:
                         return retval;
                     }
 
+                    printf(" --- First: addr_counter=%i, OP=%.5s, op_len=%i\n", addr_counter, asm_line.structure.op_name, retval);
                     addr_counter += retval;
 
                     op_found = true;
                     break;
                 }
             }
-
-            printf("1 addr_count=%i\n", addr_counter);
 
             assertf(op_found, "Operation not found: %.5s", asm_line.structure.op_name);
         }
@@ -208,7 +207,7 @@ public methods:
         {
             asm_mapping_u asm_line = {};
             memcpy(asm_line.buffer, line.c_str(), 80);
-            asm_line.structure.COMMENT[51] = '\0';
+            asm_line.structure.comment[51] = '\0';
 
             asm_lines.push_back(asm_line);
 
@@ -221,7 +220,7 @@ public methods:
 
     int write_file(std::string& outFileName)
     {
-        std::ofstream output(outFileName);
+        std::ofstream output(outFileName, std::ofstream::binary);
         assertf(output, "Error while trying to open file: %s", outFileName);
 
         auto outReadable = outFileName + ".txt";
@@ -235,6 +234,22 @@ public methods:
         }
 
         output.close();
+        return 0;
+    }
+
+
+    int hexDump() {
+
+        for (auto& card: cards)
+        {
+            uint8_t* buff = card->getBuffer();
+            for (int i = 0; i < 80; i++)
+            {
+                printf("%c", buff[i]);
+            }
+            printf("\n\n");
+        }
+
         return 0;
     }
 

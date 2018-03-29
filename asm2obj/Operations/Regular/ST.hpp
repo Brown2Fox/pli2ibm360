@@ -8,7 +8,7 @@
 #include "RX.hpp"
 
 class ST: public RX {
-public ctors:
+public:
     ST(): RX(0, '\x50', "ST   ") {};
 };
 

@@ -2,25 +2,28 @@
 #define PROJECT_EXTRN_HPP
 
 #include <memory>
-#include <ibm360_types.h>
 #include "Operation.hpp"
 
 class EXTRN: public Operation
 {
-public ctors:
+public:
+
     EXTRN(): Operation(1, '\x00', "EXTRN") {};
-public methods:
+
+public:
+
     int process1(Params& p) override
     {
 
-        printf("EXTRN: \n");
+        printf("EXTRN: extern symbol << name: %.12s\n", p.asm_line.structure.operand);
 
         return 0;
     }
+
     int process2(Params& p) override
     {
         char* sym_name_asm = nullptr;
-        uint32 program_len = 0;
+        uint32_t program_len = 0;
 
         sym_name_asm = strtok((char*)p.asm_line.structure.operand, " ");
 

@@ -9,7 +9,7 @@
 
 class BALR: public RR
 {
-public ctors:
+public:
     BALR(): RR(0, '\x05', "BALR ") {};
 };
 

@@ -10,18 +10,21 @@
 
 class RR: public Operation {
 
-protected fields:
+    typedef struct { uint8_t OP_CODE; uint8_t R1_R2; } OP_RR;
+
+protected:
     union {
         unsigned char buffer[2];
         OP_RR structure;
     } rr;
 
-protected ctors:
+protected:
     RR() { op_len = 2; }
-    RR(uint8 op_type, uint8 op_code, const char* op_name) : Operation(op_type, op_code, op_name) {
+    RR(uint8_t op_type, uint8_t op_code, const char* op_name) : Operation(op_type, op_code, op_name) {
         op_len = 2;
     };
-public methods:
+
+public:
     int process1(Params& p) override
     {
         if (p.label_flag == 'Y')
@@ -35,6 +38,7 @@ public methods:
 
         return this->op_len;
     }
+
     int process2(Params& p) override
     {
         uint8_t id_field[8] = {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '};

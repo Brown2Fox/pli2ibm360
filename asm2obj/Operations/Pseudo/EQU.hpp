@@ -10,37 +10,37 @@
 class EQU: public Operation
 {
 
-public ctors:
+public:
     EQU(): Operation(1, '\x00', "EQU  ") {};
 
-public methods:
+public:
     int process1(Params& p) override
     {
         with(p.symbols.back(), sym)
 
             p.label_flag = 'N';
-            sym.length = this->op_len;
+            sym.length = op_len;
 
-            if (p.asm_line.structure.operand[0] == '*') /*то                      */
-            { /* запомнить в табл.симв.:*/
-                sym.val = p.addr_counter; /*  addr_counter в поле sym_addr,   */
-                sym.transfer_flag = 'R'; /*  'R' в пооле transfer_flag     */
+            if (p.asm_line.structure.operand[0] == '*')
+            {
+                sym.val = p.addr_counter;
+                sym.transfer_flag = 'R';
             }
-            else /*иначе запомн.в табл.симв*/
-            { /* значение оп-нда пс.оп. */
-                sym.val = (uint32) std::strtol(reinterpret_cast<char *>(p.asm_line.structure.operand), nullptr, 10);
-                sym.transfer_flag = 'A'; /* 'A' в поле transfer_flag       */
+            else
+            {
+                sym.val = (uint32_t) std::strtol(reinterpret_cast<char *>(p.asm_line.structure.operand), nullptr, 10);
+                sym.transfer_flag = 'A';
             }
 
-            printf("EQU: symbols << val: %i, len: %i, name: %.8s\n", sym.val, sym.length, sym.name);
+            printf("EQU: local symbol << val: %i, len: %i, name: %.8s\n", sym.val, sym.length, sym.name);
 
         end_with;
-        return 0; /*успешное заверш.подпр.  */
+        return 0;
     }
 
     int process2(Params& p) override
     {
-        return 0; /*успешное заверш.подпр.  */
+        return 0;
     }
 };
 

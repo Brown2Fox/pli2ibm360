@@ -6,25 +6,17 @@
 #define PROJECT_DC_HPP
 
 
-#include "RX.hpp"
-
-
-
-
-
 class DC: public Operation {
 
-public ctors:
+public:
     DC(): Operation(1, '\x00', "DC   ") {};
 
-public methods:
+public:
     int process1(Params& p) override
     {
+        alignAddr(p.addr_counter, 4);
+
         op_len = 4;
-        if (p.addr_counter % 4)
-        {
-            p.addr_counter = (p.addr_counter / 4 + 1) * 4; /* установ.p.addr_counter на гр.сл.*/
-        }
 
         if (p.label_flag == 'Y')
         {
@@ -38,14 +30,16 @@ public methods:
         }
 
         with(p.symbols.back(), sym)
-            printf("DC: symbols << val: %i, len: %i, name: %.8s\n", sym.val, sym.length, sym.name);
+            printf("DC: local symbol << val: %i, len: %i, name: %.8s\n", sym.val, sym.length, sym.name);
         end_with;
-//        p.addr_counter += op_len;
+
         return op_len;
     }
 
     int process2(Params& p) override
     {
+        alignAddr(p.addr_counter, 4);
+
         uint8_t val_buff[56] = {0x40};
         uint8_t id_field[8] = {0x0};
 

@@ -2,7 +2,6 @@
 #define _IBM_360_OPERATION_
 
 #include "../Utils.hpp"
-#include <ibm360_types.h>
 #include <cstring>
 #include <cstdio>
 #include <Card.hpp>
@@ -10,11 +9,6 @@
 #include "TXT_CARD.hpp"
 #include "RLD_CARD.hpp"
 #include "END_CARD.hpp"
-
-#define fields
-#define methods
-#define ctors
-
 
 class Params
 {
@@ -24,7 +18,7 @@ public:
     char& label_flag;
     std::vector<TSYM>& symbols;
     TSYM& it_sym;
-    uint32 &addr_counter;
+    uint32_t &addr_counter;
     asm_mapping_u &asm_line;
     std::vector<TBASR>& baseregs;
     std::vector< std::shared_ptr<Card> >& cards;
@@ -32,7 +26,7 @@ public:
     Params(char &sym_flag_,
            std::vector<TSYM>& sym_table_,
            TSYM& it_sym_,
-           uint32 &addr_counter_,
+           uint32_t &addr_counter_,
            asm_mapping_u &asm_line_,
            std::vector<TBASR>& baseregs_,
            std::vector< std::shared_ptr<Card> >& cards_) :
@@ -50,13 +44,13 @@ public:
 class Operation
 {
 protected:
-    uint8 op_type = 0;
-    uint8 op_code = 0;
-    uint8 op_len = 0;
-    uint8 op_name[5] = {};
+    uint8_t op_type = 0;
+    uint8_t op_code = 0;
+    uint8_t op_len = 0;
+    uint8_t op_name[5] = {};
 public:
     Operation() = default;
-    Operation(uint8 op_type, uint8 op_code, const char* op_name)
+    Operation(uint8_t op_type, uint8_t op_code, const char* op_name)
     {
         this->op_type = op_type;
         this->op_code = op_code;
@@ -74,6 +68,14 @@ public:
     void print()
     {
         std::printf("op_type=%i,op_code=%i,op_len=%i,op_name=%.5s\n",op_type, op_code, op_len, op_name);
+    }
+
+    void alignAddr(uint32_t& addr, uint8_t by)
+    {
+        if (addr % by != 0)
+        {
+            addr = addr + (by - addr % by);
+        }
     }
 };
 

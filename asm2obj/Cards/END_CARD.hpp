@@ -12,24 +12,22 @@
 #include "Card.hpp"
 
 
-
-
 class END_CARD: public Card
 {
 
-    struct END_T
+    struct
     {
         uint8_t PADDING1 = 0x02;
         uint8_t CARD_TYPE[3] = {'E','N','D'};
-        uint8_t PADDING2[68] = {0x40};
-        uint8_t ID_FIELD[8]  = {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '};
+        uint8_t PADDING2[68] = {[0 ... 67] = 0x40};
+        uint8_t ID_FIELD[8]  = {[0 ... 7] = 0x40};
     } card;
 
 public:
 
-    END_CARD(uint8_t id_field[8])
+    explicit END_CARD(uint8_t id_field[8])
     {
-        printf("%s\n\n", getFormatOutput().c_str());
+        //printf("%s\n\n", getFormatOutput().c_str());
     }
 
 

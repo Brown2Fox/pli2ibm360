@@ -10,18 +10,18 @@
 class END: public Operation
 {
 
-public ctors:
+public:
     END(): Operation(1, '\x00', "END  ") {};
 
-public methods:
+public:
     int process1(Params& p) override
     {
-        printf("END.\n");
+        printf("END.\n\n");
         return -1;
     }
     int process2(Params& p) override
     {
-        printf("END.\n");
+        printf("END.\n\n");
         p.cards.push_back( std::shared_ptr<Card>(new END_CARD({})) );
         return -1;
     }

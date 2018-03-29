@@ -5,21 +5,19 @@
 #ifndef PROJECT_DS_HPP
 #define PROJECT_DS_HPP
 
-#include "RX.hpp"
-
 class DS: public Operation
 {
-public ctors:
-            DS(): Operation(1, '\x00', "DS   ") {};
-public methods:
+
+public:
+
+    DS(): Operation(1, '\x00', "DS   ") {};
+
+public:
     int process1(Params& p) override
     {
-        op_len = 4;
+        alignAddr(p.addr_counter, 4);
 
-        if (p.addr_counter % 4 != 0)
-        {
-            p.addr_counter = (p.addr_counter / 4 + 1) * 4; /* установ.p.addr_counter на гр.сл.*/
-        }
+        op_len = 4;
 
         if (p.label_flag == 'Y')
         {
@@ -33,13 +31,16 @@ public methods:
         }
 
         with(p.symbols.back(), sym)
-            printf("DS: symbols << val: %i, len: %i, name: %.8s\n", sym.val, sym.length, sym.name);
+            printf("DS: local symbol << val: %i, len: %i, name: %.8s\n", sym.val, sym.length, sym.name);
         end_with;
 
         return op_len;
     }
+
     int process2(Params& p) override
     {
+        alignAddr(p.addr_counter, 4);
+
         uint8_t id_field[8] = {' '};
         uint8_t val_buff[56] = {0x40};
 

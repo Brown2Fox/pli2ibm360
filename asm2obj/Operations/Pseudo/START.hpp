@@ -9,27 +9,25 @@
 
 class START: public Operation
 {
-public ctors:
+public:
+
     START(): Operation(1, '\x00', "START") {};
-public methods:
+
+public:
+
     int process1(Params& p) override
     {
         p.label_flag = 'N'; // clear flag
 
+        p.addr_counter = static_cast<uint32_t>(strtol((const char *)p.asm_line.structure.operand, nullptr, 10));
 
-        p.addr_counter = static_cast<uint32>(strtol((const char *)p.asm_line.structure.operand, nullptr, 10));
-
-
-        if (p.addr_counter % 8 != 0)
-        {
-            p.addr_counter = (p.addr_counter + (8 - p.addr_counter % 8)); /*кратным                 */
-        }
+        alignAddr(p.addr_counter, 8);
 
         with(p.symbols.back(), sym)
-            sym.val = p.addr_counter; /* p.addr_counter в поле sym_addr,    */
-            sym.length = this->op_len; /* 1 в поле sym_length,        */
-            sym.transfer_flag = 'R'; /* 'R' в поле transfer_flag       */
-            printf("START: symbols << val: %i, len: %i, name: %.8s\n", sym.val, sym.length, sym.name);
+            sym.val = p.addr_counter;
+            sym.length = op_len;
+            sym.transfer_flag = 'R';
+            printf("START: local symbol << val: %i, len: %i, name: %.8s\n", sym.val, sym.length, sym.name);
         end_with;
 
         return 0;
@@ -38,7 +36,7 @@ public methods:
     {
         char* sym_name_asm = nullptr;
         char* sym_name_tbl = nullptr;
-        uint32 program_len = 0; /*                        */
+        uint32_t program_len = 0;
 
         sym_name_asm = strtok((char*)p.asm_line.structure.label, " ");
 
