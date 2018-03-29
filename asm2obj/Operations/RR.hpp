@@ -24,24 +24,24 @@ protected ctors:
 public methods:
     int process1(Params& p) override
     {
-        if (p.sym_flag == 'Y') /*если ранее обнар.метка, */
+        if (p.label_flag == 'Y')
         {
-            with(p.sym_table[p.it_sym], sym)
+            with(p.symbols.back(), sym)
                 sym.length = this->op_len;
                 sym.transfer_flag = 'R';
-                printf("RR: sym_table << val: %i, len: %i, name: %.8s\n", sym.val, sym.length, sym.name);
+                printf("RR: symbols << val: %i, len: %i, name: %.8s\n", sym.val, sym.length, sym.name);
             end_with;
-
         }
-//        addr_counter += this->op_len;
+
         return this->op_len;
     }
     int process2(Params& p) override
     {
+        uint8_t id_field[8] = {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '};
         char* sym_name_tbl;
         char* sym_name_asm_1;
         char* sym_name_asm_2;
-        unsigned char R1R2;
+        uint8_t R1R2;
         uint8_t R1 = 0;
         uint8_t R2 = 0;
 
@@ -53,7 +53,7 @@ public methods:
         if (isalpha((int)*sym_name_asm_1))
         {
             bool found = false;
-            for (auto& sym: p.sym_table) // iterate over p.sym_table
+            for (auto& sym: p.symbols) // iterate over p.symbols
             {
                 sym_name_tbl = strtok((char*)sym.name, " ");
                 if (strcmp(sym_name_tbl, sym_name_asm_1) == 0)
@@ -73,7 +73,7 @@ public methods:
         if (std::isalpha((int)*sym_name_asm_2))
         {
             bool found = false;
-            for (auto& sym: p.sym_table) // iterate over p.sym_table
+            for (auto& sym: p.symbols) // iterate over p.symbols
             {
                 sym_name_tbl = strtok((char*)sym.name, " ");
                 if (strcmp(sym_name_tbl, sym_name_asm_2) == 0)
@@ -95,9 +95,8 @@ public methods:
 
         printf("RR: oper=%.5s, regnum1=%i, regnum2=%i | op_len=%i\n", this->op_name, R1, R2, op_len);
 
-       p.cards.push_back( std::shared_ptr<Card>(new TXT_CARD(this->op_len, p.addr_counter, rr.buffer, {})) );
+       p.cards.push_back( std::shared_ptr<Card>(new TXT_CARD(this->op_len, p.addr_counter, rr.buffer, id_field)) );
 
-//        addr_counter += this->op_len;
         return this->op_len;
     }
 };

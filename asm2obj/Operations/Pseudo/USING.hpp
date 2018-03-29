@@ -29,10 +29,10 @@ public methods:
         if (isalpha((int)*sym_name_asm_2)) // is begin from letter
         {
             bool found = false;
-            for (auto& sym: p.sym_table) // iterate over p.sym_table
+            for (auto& sym: p.symbols) // iterate over p.symbols
             {
                 sym_name_tbl = strtok((char*)sym.name, " ");
-                if (strcmp(sym_name_tbl, sym_name_asm_2) == 0) // is found in p.sym_table
+                if (strcmp(sym_name_tbl, sym_name_asm_2) == 0) // is found in p.symbols
                 {
                     BaseRegNum = sym.val;
                     found = true;
@@ -56,10 +56,10 @@ public methods:
         else
         {
             bool found = false;
-            for (auto& sym: p.sym_table) // iterate over p.sym_table
+            for (auto& sym: p.symbols) // iterate over p.symbols
             {
                 sym_name_tbl = strtok((char*)sym.name, " ");
-                if (strcmp(sym_name_tbl, sym_name_asm_1) == 0) // is found in p.sym_table
+                if (strcmp(sym_name_tbl, sym_name_asm_1) == 0) // is found in p.symbols
                 {
                     p.baseregs[BaseRegNum - 1].base_addr = sym.val;
                     found = true;

@@ -21,9 +21,9 @@ class Params
 
 public:
 
-    char& sym_flag;
-    std::vector<TSYM>& sym_table;
-    int& it_sym;
+    char& label_flag;
+    std::vector<TSYM>& symbols;
+    TSYM& it_sym;
     uint32 &addr_counter;
     asm_mapping_u &asm_line;
     std::vector<TBASR>& baseregs;
@@ -31,13 +31,13 @@ public:
 public:
     Params(char &sym_flag_,
            std::vector<TSYM>& sym_table_,
-           int& it_sym_,
+           TSYM& it_sym_,
            uint32 &addr_counter_,
            asm_mapping_u &asm_line_,
            std::vector<TBASR>& baseregs_,
            std::vector< std::shared_ptr<Card> >& cards_) :
-        sym_flag(sym_flag_),
-        sym_table(sym_table_),
+        label_flag(sym_flag_),
+        symbols(sym_table_),
         it_sym(it_sym_),
         addr_counter(addr_counter_),
         asm_line(asm_line_),

@@ -16,11 +16,12 @@ public ctors:
 public methods:
     int process1(Params& p) override
     {
+        printf("END.\n");
         return -1;
     }
     int process2(Params& p) override
     {
-        printf("END: oper=%.5s\n", this->op_name);
+        printf("END.\n");
         p.cards.push_back( std::shared_ptr<Card>(new END_CARD({})) );
         return -1;
     }

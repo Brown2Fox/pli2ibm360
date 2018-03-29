@@ -16,9 +16,9 @@ public ctors:
 public methods:
     int process1(Params& p) override
     {
-        with(p.sym_table[p.it_sym], sym)
+        with(p.symbols.back(), sym)
 
-            p.sym_flag = 'N';
+            p.label_flag = 'N';
             sym.length = this->op_len;
 
             if (p.asm_line.structure.operand[0] == '*') /*то                      */
@@ -32,7 +32,7 @@ public methods:
                 sym.transfer_flag = 'A'; /* 'A' в поле transfer_flag       */
             }
 
-            printf("EQU: sym_table << val: %i, len: %i, name: %.8s\n", sym.val, sym.length, sym.name);
+            printf("EQU: symbols << val: %i, len: %i, name: %.8s\n", sym.val, sym.length, sym.name);
 
         end_with;
         return 0; /*успешное заверш.подпр.  */

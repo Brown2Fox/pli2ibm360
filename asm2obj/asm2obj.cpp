@@ -16,19 +16,20 @@
 #include "Regular/L.hpp"
 #include "Regular/A.hpp"
 #include "Regular/S.hpp"
-#include "DC.hpp"
-#include "DS.hpp"
+
+#include "Pseudo/DC.hpp"
+#include "Pseudo/DS.hpp"
 #include "Pseudo/END.hpp"
 #include "Pseudo/EQU.hpp"
 #include "Pseudo/START.hpp"
 #include "Pseudo/USING.hpp"
-
+#include <Pseudo/EXTRN.hpp>
 
 struct {
-    const char *outFileName;
-    const char *inFileName;
-    bool verbosity;
-} gl_opts;
+    std::vector<std::string> outFileNames;
+    std::vector<std::string> inFileNames;
+    bool verbosity = false;
+} gl_args;
 
 
 void parse_args(int argc, char* argv[])
@@ -36,23 +37,19 @@ void parse_args(int argc, char* argv[])
     int opt = 0;
     const char *optString = "i:o:v";
 
-    gl_opts.inFileName = "";
-    gl_opts.outFileName = "";
-    gl_opts.verbosity = false;
-
     while( (opt = getopt( argc, argv, optString )) != -1 ) {
         switch( opt ) {
 
             case 'o':
-                gl_opts.outFileName = optarg;
+                gl_args.outFileNames.emplace_back(optarg);
                 break;
 
             case 'i':
-                gl_opts.inFileName = optarg;
+                gl_args.inFileNames.emplace_back(optarg);
                 break;
 
             case 'v':
-                gl_opts.verbosity = true;
+                gl_args.verbosity = true;
                 break;
 
             default:
@@ -67,19 +64,21 @@ class Compiler
 
 private fields:
 
-    std::vector< std::shared_ptr< Operation > > operations = {
-            std::shared_ptr<Operation>(new BALR()),
-            std::shared_ptr<Operation>(new BCR()),
-            std::shared_ptr<Operation>(new ST()),
-            std::shared_ptr<Operation>(new L()),
-            std::shared_ptr<Operation>(new A()),
-            std::shared_ptr<Operation>(new S()),
-            std::shared_ptr<Operation>(new DC()),
-            std::shared_ptr<Operation>(new DS()),
-            std::shared_ptr<Operation>(new END()),
-            std::shared_ptr<Operation>(new EQU()),
-            std::shared_ptr<Operation>(new START()),
-            std::shared_ptr<Operation>(new USING())
+    typedef std::shared_ptr< Operation > OpPtr;
+    std::vector< OpPtr > operations = {
+            OpPtr(new BALR()),
+            OpPtr(new BCR()),
+            OpPtr(new ST()),
+            OpPtr(new L()),
+            OpPtr(new A()),
+            OpPtr(new S()),
+            OpPtr(new DC()),
+            OpPtr(new DS()),
+            OpPtr(new END()),
+            OpPtr(new EQU()),
+            OpPtr(new START()),
+            OpPtr(new USING()),
+            OpPtr(new EXTRN())
     };
 
     std::vector<TBASR> baseregs = {
@@ -100,26 +99,23 @@ private fields:
             { 0x00, 'N' }
     };
 
-    std::vector<TSYM> sym_table;
-    int it_sym = -1;
-    char sym_flag =  'N';
+    std::vector<TSYM> symbols;
+    char label_flag =  'N';
 
     uint32 addr_counter = 0;
 
     std::vector<asm_mapping_u> asm_lines;
 
-    std::vector< std::shared_ptr<Card> > cards;
+    typedef std::shared_ptr<Card> CardPtr;
+    std::vector< CardPtr > cards;
 
 public ctors:
 
     Compiler()
     {
-
-        for (const auto& op: operations)
-        {
-            op->print();
-        }
-
+        ESD_CARD::ID_NUM = 0;
+        TXT_CARD::ID_NUM = 0;
+        RLD_CARD::ID_NUM = 1;
     };
 
 public methods:
@@ -132,13 +128,12 @@ public methods:
 
             if (asm_line.structure.label[0] != ' ')
             {
-                it_sym++;
-                sym_flag = 'Y';
+                label_flag = 'Y';
                 TSYM tsym = {};
                 memcpy(tsym.name, asm_line.structure.label, 8);
                 tsym.val = addr_counter;
 
-                sym_table.push_back(tsym);
+                symbols.push_back(tsym);
             }
 
             bool op_found = false;
@@ -147,11 +142,11 @@ public methods:
             {
                 if (op->isOperation(asm_line.structure.op_name))
                 {
-                    auto p = Params(sym_flag, sym_table, it_sym, addr_counter, asm_line, baseregs, cards);
+                    auto p = Params(label_flag, symbols, symbols.back(), addr_counter, asm_line, baseregs, cards);
 
                     int retval = op->process1( p );
 
-                    sym_flag = 'N';
+                    label_flag = 'N';
 
                     if (retval < 0)
                     {
@@ -175,15 +170,15 @@ public methods:
     int second_iterate()
     {
 
-        for (auto& asm_line: asm_lines) // iterate over ASM_TEXT
+        for (auto& asm_line: asm_lines) // iterate over asm_lines
         {
 
             bool op_found = false;
-            for (const auto &op: operations) // iterate over op_table
+            for (const auto &op: operations) // iterate over operations
             {
                 if (op->isOperation(asm_line.structure.op_name))
                 {
-                    auto p = Params(sym_flag, sym_table, it_sym, addr_counter, asm_line, baseregs, cards);
+                    auto p = Params(label_flag, symbols, symbols.back(), addr_counter, asm_line, baseregs, cards);
                     int retval = op->process2(p);
 
                     if (retval < 0)
@@ -203,11 +198,11 @@ public methods:
     }
 
 
-    int read_file()
+    int read_file(std::string& inFileName)
     {
 
-        std::ifstream input(gl_opts.inFileName);
-        assertf(input, "Error while trying to open file: %s", gl_opts.inFileName);
+        std::ifstream input(inFileName);
+        assertf(input, "Error while trying to open file: %s", inFileName);
 
         for (std::string line; std::getline(input, line); )
         {
@@ -224,14 +219,19 @@ public methods:
         return 0;
     }
 
-    int write_file()
+    int write_file(std::string& outFileName)
     {
-        std::ofstream output(gl_opts.outFileName);
-        assertf(output, "Error while trying to open file: %s", gl_opts.outFileName);
+        std::ofstream output(outFileName);
+        assertf(output, "Error while trying to open file: %s", outFileName);
+
+        auto outReadable = outFileName + ".txt";
+        std::ofstream output_readable(outReadable);
+        assertf(output_readable, "Error while trying to open file: %s", outReadable);
 
         for (const auto& card: cards)
         {
             output.write(reinterpret_cast<const char *>(card->getBuffer()), 80);
+            output_readable << card->getFormatOutput() << std::endl;
         }
 
         output.close();
@@ -241,22 +241,24 @@ public methods:
 };
 
 
-
-
 int main(int argc, char* argv[]) 
 {
     parse_args(argc, argv);
 
-    Compiler comp;
+    for (auto in = gl_args.inFileNames.begin(), out = gl_args.outFileNames.begin();
+         in != gl_args.inFileNames.end() || out != gl_args.outFileNames.end();
+         in++, out++)
+    {
+        Compiler comp;
 
-    comp.read_file();
+        comp.read_file(*in);
 
+        comp.first_iterate();
+        comp.second_iterate();
 
-    comp.first_iterate();
-    comp.second_iterate();
+        comp.write_file(*out);
 
-    comp.write_file();
-
+    }
 
     return 0;
 }

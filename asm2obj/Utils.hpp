@@ -22,6 +22,16 @@ constexpr int64_t ipow(int64_t base, int exp, int64_t result = 1) {
     return exp < 1 ? result : ipow(base*base, exp/2, (exp % 2) ? result*base : result);
 }
 
+template<typename ... Args>
+std::string format(const std::string &fmt, Args ... args)
+{
+    // C++11 specify that string store elements continously
+    std::string ret;
 
+    auto sz = std::snprintf(nullptr, 0, fmt.c_str(), args...);
+    ret.reserve(sz + 1); ret.resize(sz);    // to be sure there have room for \0
+    std::snprintf(&ret.front(), ret.capacity() + 1, fmt.c_str(), args...);
+    return ret;
+}
 
 #endif //PROJECT_UTILS_HPP

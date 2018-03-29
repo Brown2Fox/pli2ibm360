@@ -12,6 +12,6 @@ include_directories(Cards)
 
 FILE(GLOB FILES Operations/*.hpp Operations/Pseudo/*.hpp Operations/Regular/*.hpp Cards/*.hpp)
 
-set(ASM2OBJ_SOURCES asm2obj.cpp Utils.hpp ${FILES})
+set(ASM2OBJ_SOURCES asm2obj.cpp Utils.hpp ${FILES} Operations/Pseudo/EXTRN.hpp)
 
 add_executable(asm2obj ${ASM2OBJ_SOURCES})

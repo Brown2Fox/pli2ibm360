@@ -10,66 +10,66 @@
 #include <cstdio>
 #include "Card.hpp"
 
-struct RLD_T
-{
-    uint8_t PADDING1; /*место для кода 0x02        */
-    uint8_t CARD_TYPE[3]; /*поле типа об'ектн.карты     */
-    uint8_t PADDING2; /*пробел                     */
-    uint8_t ID_NUM[2]; /*внутр.ид-р имени прогр.    */
-    uint8_t PADDING3[3]; /*пробелы                 */
-    uint8_t SIGN[2]; /*знак операции               */
-    uint8_t PADDING4[4]; /*пробелы                 */
-    uint8_t OFFSET_ADDR[3]; /*адрес                   */
-    uint8_t PADDING5[53];
-    uint8_t ID_FIELD[8]; /*идентификационное поле */
-};
+
+
+
 
 class RLD_CARD: public Card
 {
-    union {
-        RLD_T structure;
-        uint8_t buffer[80];
+
+    struct RLD_T
+    {
+        uint8_t PADDING1       = 0x02; /*место для кода 0x02        */
+        uint8_t CARD_TYPE[3]   = {'R','L','D'}; /*поле типа об'ектн.карты     */
+        uint8_t PADDING2       = 0x40; /*пробел                     */
+        uint8_t ID_NUM[2]      = {0x00,0x00};/*внутр.ид-р имени прогр.    */
+        uint8_t PADDING3[3]    = {0x40, 0x40, 0x40};/*пробелы                 */
+        uint8_t SIGN[2]        = {0x0, 0xC};/*знак операции               */
+        uint8_t PADDING4[4]    = {0x40, 0x40, 0x40, 0x40};/*пробелы                 */
+        uint8_t OFFSET_ADDR[3] = {0x00, 0x00, 0x00}; /*адрес                   */
+        uint8_t PADDING5[53]   = {0x40};
+        uint8_t ID_FIELD[8]    = {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '}; /*идентификационное поле */
     } card;
 
+
 public:
+    static uint8_t ID_NUM;
 
     RLD_CARD(uint32_t offset_addr, uint8_t id_field[8])
     {
-        card.structure.PADDING1 = 0x02;
-        memcpy(card.structure.CARD_TYPE, "RLD", 3);
-        card.structure.PADDING2 = 0x40;
-        card.structure.ID_NUM[0] = 0x00;
-        card.structure.ID_NUM[1] = 0x01;
-        memset(card.structure.PADDING3, 0x40, 3);
-        memcpy(card.structure.SIGN, "00", 2);
-        memset(card.structure.PADDING4, 0x40, 4);
-        memset(card.structure.OFFSET_ADDR, 0x40, 3);
-        memset(card.structure.PADDING5, 0x40, 53);
-        memset(card.structure.ID_FIELD, 0x40, 8);
+        card.OFFSET_ADDR[0] = static_cast<uint8_t>(offset_addr >> 16);
+        card.OFFSET_ADDR[1] = static_cast<uint8_t>(offset_addr >> 8);
+        card.OFFSET_ADDR[2] = static_cast<uint8_t>(offset_addr);
 
-        //===
+        card.SIGN[0] = 0x0;
+        card.SIGN[1] = 0xC;
 
-        // FIXME: black magic in RLD_CARD.OFFSET_ADDR
-//        card.structure.OFFSET_ADDR[0] = (uint8_t) '\x00';
-//        card.structure.OFFSET_ADDR[1] = (uint8_t) *(&offset_addr + 1);
-//        card.structure.OFFSET_ADDR[2] = (uint8_t) *(&offset_addr);
+        card.ID_NUM[0] = static_cast<uint8_t>(ID_NUM >> 8);
+        card.ID_NUM[1] = static_cast<uint8_t>(ID_NUM);
+        ID_NUM++;
 
-        card.structure.OFFSET_ADDR[0] = 0;
-        card.structure.OFFSET_ADDR[1] = 0;
-        card.structure.OFFSET_ADDR[2] = (uint8_t) offset_addr;
+        memcpy(card.ID_FIELD, id_field, 8);
 
-        card.structure.SIGN[0] = 0x0;
-        card.structure.SIGN[1] = 0xC;
+        printf("%s\n\n", getFormatOutput().c_str());
+    }
 
-        //memcpy(card.structure.ID_FIELD, id_field, 8);
 
-        printf(" --- rld card: offset_addr=%i\n\n", offset_addr);
+    std::string getFormatOutput() override
+    {
+        const char *fmt = "<%.3s: id_num=%i, sign=%i, offset_addr=%i, id_field=%.8s>";
+        return format(fmt,
+                      card.CARD_TYPE,
+                      card.ID_NUM[0]*0x100 + card.ID_NUM[1],
+                      card.SIGN[1],
+                      card.OFFSET_ADDR[0]*0x10000 + card.OFFSET_ADDR[1]*0x100 + card.OFFSET_ADDR[2],
+                      card.ID_FIELD);
     }
 
     uint8_t* getBuffer() override {
-        return card.buffer;
+        return (uint8_t*)&card;
     }
 };
 
+uint8_t RLD_CARD::ID_NUM = 1;
 
 #endif //PROJECT_RLD_HPP

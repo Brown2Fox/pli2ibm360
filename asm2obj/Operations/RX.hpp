@@ -25,9 +25,9 @@ protected ctors:
 public methods:
     int process1(Params& p) override
     {
-        if (p.sym_flag == 'Y') /*если ранее обнар.метка, */
+        if (p.label_flag == 'Y') /*если ранее обнар.метка, */
         {
-            with(p.sym_table[p.it_sym], sym)
+            with(p.symbols.back(), sym)
                 sym.length = this->op_len;
                 sym.transfer_flag = 'R';
                 printf("RX: sym_tablea << val: %i, len: %i, name: %.8s}\n", sym.val, sym.length, sym.name);
@@ -38,6 +38,7 @@ public methods:
     }
     int process2(Params& p) override
     {
+        uint8_t id_field[8] = {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '};
         char* sym_name_tbl = nullptr;
         char* sym_name_asm_1 = nullptr;
         char* sym_name_asm_2 = nullptr;
@@ -59,13 +60,13 @@ public methods:
         if (isalpha((int)*sym_name_asm_1))
         {
             bool found = false;
-            for (auto& sym: p.sym_table) // iterate over p.sym_table
+            for (auto& sym: p.symbols) // iterate over p.symbols
             {
                 sym_name_tbl = strtok((char*)sym.name, " ");
                 if (!strcmp(sym_name_tbl, sym_name_asm_1)) /* и при совпадении:      */
                 {
                     // FIXME: magic
-//                    R1X2 = p.sym_table[j].sym_addr << 4; /*  метки в качестве перв.*/
+//                    R1X2 = p.symbols[j].sym_addr << 4; /*  метки в качестве перв.*/
                     RegNum = (uint8_t) sym.val;
                     found = true;
                     break;
@@ -82,7 +83,7 @@ public methods:
         if (isalpha((int)*sym_name_asm_2))
         {
             bool found = false;
-            for (auto& sym: p.sym_table) // iterate over p.sym_table
+            for (auto& sym: p.symbols) // iterate over p.symbols
             {
                 sym_name_tbl = strtok((char*)sym.name, " ");
                 if (!strcmp(sym_name_tbl, sym_name_asm_2))
@@ -133,7 +134,7 @@ public methods:
                p.baseregs[BaseRegNum-1].base_addr,
                Displacement, op_len);
 
-        p.cards.push_back( std::shared_ptr<Card>( new TXT_CARD(this->op_len, p.addr_counter, rx.buffer, {})) );
+        p.cards.push_back( std::shared_ptr<Card>( new TXT_CARD(this->op_len, p.addr_counter, rx.buffer, id_field)) );
 //        addr_counter += this->op_len;
         return op_len;
     }

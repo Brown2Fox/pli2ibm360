@@ -24,9 +24,6 @@ typedef struct OP_RR_T /*структ.буф.опер.форм.RR */
 } OP_RR;
 
 
-
-
-
 typedef struct TSYM_T /*структ.строки табл.симв.*/
 {
     uint8  name[8]; /*имя символа             */
