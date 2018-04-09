@@ -12,7 +12,7 @@ public:
 
 public:
 
-    int process1(Params& p) override
+    int process1(const Params& p) override
     {
 
         printf("EXTRN: extern symbol << name: %.12s\n", p.asm_line.structure.operand);
@@ -20,7 +20,7 @@ public:
         return 0;
     }
 
-    int process2(Params& p) override
+    int process2(const Params& p) override
     {
         char* sym_name_asm = nullptr;
         uint32_t program_len = 0;
@@ -34,6 +34,8 @@ public:
         p.cards.push_back( std::shared_ptr<Card>(new ESD_CARD(program_len, p.addr_counter, sym_name_asm, 2)) );
         return 0;
     }
+
+    ~EXTRN() { std::printf("~EXTRN()\n"); }
 };
 
 

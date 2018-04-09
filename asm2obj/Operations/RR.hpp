@@ -10,22 +10,24 @@
 
 class RR: public Operation {
 
-    typedef struct { uint8_t OP_CODE; uint8_t R1_R2; } OP_RR;
+    using OP_RR = struct { uint8_t OP_CODE; uint8_t R1_R2; };
 
-protected:
+protected /*FIELDS*/:
+
     union {
         unsigned char buffer[2];
         OP_RR structure;
-    } rr;
+    } rr {};
 
-protected:
+protected /*CTORS*/:
+
     RR() { op_len = 2; }
     RR(uint8_t op_type, uint8_t op_code, const char* op_name) : Operation(op_type, op_code, op_name) {
         op_len = 2;
     };
 
 public:
-    int process1(Params& p) override
+    int process1(const Params &p) override
     {
         if (p.label_flag == 'Y')
         {
@@ -39,17 +41,18 @@ public:
         return this->op_len;
     }
 
-    int process2(Params& p) override
+    int process2(const Params &p) override
     {
         uint8_t id_field[8] = {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '};
         char* sym_name_tbl;
         char* sym_name_asm_1;
         char* sym_name_asm_2;
         uint8_t R1R2;
+
         uint8_t R1 = 0;
         uint8_t R2 = 0;
 
-        rr.structure.OP_CODE = this->op_code;
+
 
         sym_name_asm_1 = strtok((char*)p.asm_line.structure.operand, ",");
         sym_name_asm_2 = strtok(nullptr, " ");
@@ -94,7 +97,8 @@ public:
             R2 = static_cast<uint8_t>(strtol(sym_name_asm_2, nullptr, 10));/*значен.выбр.   лексемы  */
         }
 
-
+        //FIXME: magic RR
+        rr.structure.OP_CODE = this->op_code;
         rr.structure.R1_R2 = (R1 << 4) + R2;
 
         printf("RR: oper=%.5s, regnum1=%i, regnum2=%i | op_len=%i\n", this->op_name, R1, R2, op_len);
@@ -103,6 +107,8 @@ public:
 
         return this->op_len;
     }
+
+    ~RR() { std::printf("~RR()\n"); }
 };
 
 #endif //PROJECT_RR_HPP

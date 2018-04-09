@@ -52,15 +52,15 @@ public:
 
     }
 
-    public: std::string getFormatOutput() override
+    std::string getFormatOutput() override
     {
-        const char *fmt = "<%.3s: id_num=%i, op_addr=%i, op_len=%i, op_body=%.8s, id_field=%.8s>";
+        const char *fmt = "<%.3s: id_num=%i, op_addr=%i, op_len=%i, op_body=%x.%x.%x.%x, id_field=%.8s>";
         return format(fmt,
                       card.CARD_TYPE,
                       card.ID_NUM[0]*0x100 + card.ID_NUM[1],
                       card.OP_ADDR[0]*0x10000 + card.OP_ADDR[1]*0x100 + card.OP_ADDR[2],
                       card.OP_LENGTH[0]*0x100 + card.OP_LENGTH[1],
-                      card.OP_BODY,
+                      card.OP_BODY[0], card.OP_BODY[1], card.OP_BODY[2], card.OP_BODY[3],
                       card.ID_FIELD);
     }
 

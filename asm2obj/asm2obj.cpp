@@ -64,8 +64,8 @@ class Compiler
 
 private:
 
-    typedef std::shared_ptr< Operation > OpPtr;
-    std::vector< OpPtr > operations = {
+    using OpPtr =  std::shared_ptr<Operation>;
+    std::vector<OpPtr> operations = {
             OpPtr(new BALR()),
             OpPtr(new BCR()),
             OpPtr(new ST()),
@@ -142,9 +142,8 @@ public:
             {
                 if (op->isOperation(asm_line.structure.op_name))
                 {
-                    auto p = Params(label_flag, symbols, symbols.back(), addr_counter, asm_line, baseregs, cards);
 
-                    int retval = op->process1( p );
+                    int retval = op->process1( {label_flag, symbols, symbols.back(), addr_counter, asm_line, baseregs, cards} );
 
                     label_flag = 'N';
 
@@ -177,8 +176,7 @@ public:
             {
                 if (op->isOperation(asm_line.structure.op_name))
                 {
-                    auto p = Params(label_flag, symbols, symbols.back(), addr_counter, asm_line, baseregs, cards);
-                    int retval = op->process2(p);
+                    int retval = op->process2({label_flag, symbols, symbols.back(), addr_counter, asm_line, baseregs, cards});
 
                     if (retval < 0)
                     {

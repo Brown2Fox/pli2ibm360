@@ -7,7 +7,7 @@
 
 
 #include <cstdint>
-
+#include <string>
 
 
 class Card

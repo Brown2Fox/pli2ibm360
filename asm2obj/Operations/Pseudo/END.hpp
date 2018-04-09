@@ -14,17 +14,19 @@ public:
     END(): Operation(1, '\x00', "END  ") {};
 
 public:
-    int process1(Params& p) override
+    int process1(const Params& p) override
     {
         printf("END.\n\n");
         return -1;
     }
-    int process2(Params& p) override
+    int process2(const Params& p) override
     {
         printf("END.\n\n");
         p.cards.push_back( std::shared_ptr<Card>(new END_CARD({})) );
         return -1;
     }
+
+    ~END() { std::printf("~END()\n");  }
 };
 
 

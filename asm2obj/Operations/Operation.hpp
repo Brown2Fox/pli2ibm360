@@ -5,10 +5,12 @@
 #include <cstring>
 #include <cstdio>
 #include <Card.hpp>
+#include <memory>
 #include "ESD_CARD.hpp"
 #include "TXT_CARD.hpp"
 #include "RLD_CARD.hpp"
 #include "END_CARD.hpp"
+#include "../ibm360_types.hpp"
 
 class Params
 {
@@ -58,8 +60,8 @@ public:
     }
 public:
 
-    virtual int process1(Params& p) = 0;
-    virtual int process2(Params& p) = 0;
+    virtual int process1(const Params &p) = 0;
+    virtual int process2(const Params &p) = 0;
 
     bool isOperation(unsigned char *op_name)
     {
@@ -77,6 +79,8 @@ public:
             addr = addr + (by - addr % by);
         }
     }
+
+    virtual ~Operation() { std::printf("~Operation()\n"); };
 };
 
 #endif // _IBM_360_OPERATION_

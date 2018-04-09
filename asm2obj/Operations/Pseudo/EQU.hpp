@@ -14,7 +14,7 @@ public:
     EQU(): Operation(1, '\x00', "EQU  ") {};
 
 public:
-    int process1(Params& p) override
+    int process1(const Params& p) override
     {
         with(p.symbols.back(), sym)
 
@@ -38,10 +38,13 @@ public:
         return 0;
     }
 
-    int process2(Params& p) override
+    int process2(const Params& p) override
     {
         return 0;
     }
+
+
+    ~EQU() { std::printf("~EQU()\n"); }
 };
 
 

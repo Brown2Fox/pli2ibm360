@@ -11,25 +11,25 @@
 
 class RX: public Operation {
 
-    typedef struct { uint8_t OP_CODE; uint8_t R1_X2; uint16_t B2_D2; } OP_RX;
+    using OP_RX = struct { uint8_t OP_CODE; uint8_t R1_X2; uint16_t B2_D2; };
 
-protected:
+protected /*FIELDS*/:
 
     union {
         uint8_t buffer[4];
         OP_RX structure;
-    } rx;
+    } rx {};
 
-protected:
+protected /*CTORS*/:
 
     RX() { op_len = 4; }
     RX(uint8_t op_type, uint8_t op_code, const char* op_name) :  Operation(op_type, op_code, op_name) {
         op_len = 4;
     };
 
-public:
+public /*METHODS*/:
 
-    int process1(Params& p) override
+    int process1(const Params& p) override
     {
         if (p.label_flag == 'Y')
         {
@@ -43,7 +43,7 @@ public:
         return op_len;
     }
 
-    int process2(Params& p) override
+    int process2(const Params& p) override
     {
         uint8_t id_field[8] = {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '};
         char* sym_name_tbl = nullptr;
@@ -55,11 +55,12 @@ public:
         constexpr uint8_t BITS = 12;
         constexpr uint16_t MAX_DISP = ipow(2, BITS); // 2^12 == 0x1000
 
-        uint8_t RegNum = 0;
-        uint8_t BaseRegNum = 0;
-        uint32_t Displacement = 0;
+        uint8_t R1 = 0;
+        uint8_t X2 = 0;
+        uint16_t B2 = 0;
+        uint16_t D2 = 0;
 
-        rx.structure.OP_CODE = this->op_code;
+
 
         sym_name_asm_1 = strtok((char*)p.asm_line.structure.operand, ",");
         sym_name_asm_2 = strtok(nullptr, " ");
@@ -73,8 +74,7 @@ public:
                 if (!strcmp(sym_name_tbl, sym_name_asm_1)) /* и при совпадении:      */
                 {
                     // FIXME: magic
-//                    R1X2 = p.symbols[j].sym_addr << 4; /*  метки в качестве перв.*/
-                    RegNum = (uint8_t) sym.val;
+                    R1 = (uint8_t) sym.val;
                     found = true;
                     break;
                 }
@@ -84,8 +84,7 @@ public:
         else
         {
             // FIXME: RX magic
-//            R1X2 = strtol(sym_name_asm_1, nullptr, 10) << 4; /*значен.выбр.   лексемы  */
-            RegNum = (uint8_t) strtol(sym_name_asm_1, nullptr, 10);
+            R1 = (uint8_t) strtol(sym_name_asm_1, nullptr, 10);
         }
 
         if (isalpha((int)*sym_name_asm_2))
@@ -96,7 +95,7 @@ public:
                 sym_name_tbl = strtok((char*)sym.name, " ");
                 if (!strcmp(sym_name_tbl, sym_name_asm_2))
                 {
-                    Displacement = MAX_DISP;
+                    D2 = MAX_DISP;
 
                     with(p.baseregs, regs)
 
@@ -104,17 +103,17 @@ public:
                         {
                             if (regs[i].activity_flag == 'Y')
                             {
-                                auto _disp = sym.val - regs[i].base_addr;
-                                if (_disp <= Displacement)
+                                auto _disp = static_cast<uint16_t>(sym.val - regs[i].base_addr);
+                                if (_disp <= D2)
                                 {
-                                    BaseRegNum = i + uint8_t(1);
-                                    Displacement = _disp;
+                                    B2 = i + uint8_t(1);
+                                    D2 = _disp;
                                 }
                             }
                         }
 
-                        assertf(BaseRegNum > 0, "Basereg not found in baseregs table (should be set base address with USING operation)\n");
-                        assertf(Displacement < MAX_DISP, "Unreachable label address from base address: base=%i, lbl=%i\n", regs[BaseRegNum-1].base_addr, sym.val);
+                        assertf(B2 > 0, "Basereg not found in baseregs table (should be set base address with USING operation)\n");
+                        assertf(D2 < MAX_DISP, "Unreachable label address from base address: base=%i, lbl=%i\n", regs[B2-1].base_addr, sym.val);
 
                     end_with;
 
@@ -127,25 +126,38 @@ public:
         else  assertf(false, "Wrong second operand format: %s", sym_name_asm_2);
 
 
-        rx.structure.R1_X2 = RegNum; /*дозапись перв.операнда  */
-        // FIXME: RX magic
+
 //                    B2D2 = basereg_num;
 //                    PTR_ = (char*)&B2D2; /* и в соглашениях ЕС ЭВМ */
 //                    swab(PTR_, PTR_, 2); /* с записью в тело ком-ды*/
-        rx.structure.B2_D2 = static_cast<uint16_t>((BaseRegNum << BITS) + Displacement);
+        // FIXME: RX magic
+        rx.structure.OP_CODE = this->op_code;
+        rx.structure.R1_X2 = (R1 << 4) + X2;
+        rx.structure.B2_D2 = (B2 << 12) + D2;
 
 
-        printf("RX: oper=%.5s, regnum=%x, baseregnum=%i(%i), disp=%i | op_len=%i\n",
+        printf("RX: oper=%.5s, regnum=%i, baseregnum=%i(%i), disp=%i | op_len=%i\n",
                this->op_name,
-               RegNum,
-               BaseRegNum,
-               p.baseregs[BaseRegNum-1].base_addr,
-               Displacement, op_len);
+               R1,
+               B2,
+               p.baseregs[B2-1].base_addr,
+               D2, op_len);
+
+
+        // this is for conversion between little-endian and big-endian notations on writing uint16_t variable
+        std::swap(rx.buffer[2], rx.buffer[3]);
+
+        for (auto c: rx.buffer)
+            printf("%i.", c);
+        printf("\n");
+
 
         p.cards.push_back( std::shared_ptr<Card>( new TXT_CARD(this->op_len, p.addr_counter, rx.buffer, id_field)) );
 
         return op_len;
     }
+
+    ~RX() { std::printf("~RX()\n"); }
 };
 
 #endif //PROJECT_RX_HPP

@@ -15,7 +15,7 @@ public:
 
 public:
 
-    int process1(Params& p) override
+    int process1(const Params& p) override
     {
         p.label_flag = 'N'; // clear flag
 
@@ -32,7 +32,7 @@ public:
 
         return 0;
     }
-    int process2(Params& p) override
+    int process2(const Params& p) override
     {
         char* sym_name_asm = nullptr;
         char* sym_name_tbl = nullptr;
@@ -59,6 +59,8 @@ public:
         p.cards.push_back( std::shared_ptr<Card>(new ESD_CARD(program_len, p.addr_counter, sym_name_tbl, 0)) );
         return 0;
     }
+
+    ~START() { std::printf("~START()\n");  }
 };
 
 

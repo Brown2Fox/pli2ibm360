@@ -15,12 +15,12 @@ public:
 
 public:
 
-    int process1(Params& p) override
+    int process1(const Params& p) override
     {
         return 0;
     }
 
-    int process2(Params& p) override
+    int process2(const Params& p) override
     {
         char* sym_name_asm_1 = nullptr;
         char* sym_name_asm_2 = nullptr;
@@ -74,6 +74,8 @@ public:
         }
         return 0;
     }
+
+    ~USING() { std::printf("~USING()\n"); }
 };
 
 

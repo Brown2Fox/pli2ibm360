@@ -5,6 +5,8 @@
 #ifndef PROJECT_DS_HPP
 #define PROJECT_DS_HPP
 
+#include <Operation.hpp>
+
 class DS: public Operation
 {
 
@@ -13,7 +15,7 @@ public:
     DS(): Operation(1, '\x00', "DS   ") {};
 
 public:
-    int process1(Params& p) override
+    int process1(const  Params& p) override
     {
         alignAddr(p.addr_counter, 4);
 
@@ -37,7 +39,7 @@ public:
         return op_len;
     }
 
-    int process2(Params& p) override
+    int process2(const Params& p) override
     {
         alignAddr(p.addr_counter, 4);
 
@@ -99,6 +101,8 @@ public:
 
         return op_len;
     }
+
+    ~DS() { std::printf("~DS()\n"); }
 };
 
 

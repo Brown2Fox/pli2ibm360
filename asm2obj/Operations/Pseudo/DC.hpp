@@ -6,13 +6,15 @@
 #define PROJECT_DC_HPP
 
 
+#include <Operation.hpp>
+
 class DC: public Operation {
 
 public:
     DC(): Operation(1, '\x00', "DC   ") {};
 
 public:
-    int process1(Params& p) override
+    int process1(const  Params& p) override
     {
         alignAddr(p.addr_counter, 4);
 
@@ -36,7 +38,7 @@ public:
         return op_len;
     }
 
-    int process2(Params& p) override
+    int process2(const Params& p) override
     {
         alignAddr(p.addr_counter, 4);
 
@@ -47,7 +49,7 @@ public:
         char* val_asm = nullptr;
 
         union { int32_t _int; float_t _float; uint32_t _address; } val = {0};
-        auto* pVal = (uint8_t*)&val;
+        uint8_t* pVal = (uint8_t*)&val;
 
         enum OPT { Nothing, Int, Float, Addr };
         int opt = OPT::Nothing;
@@ -112,11 +114,13 @@ public:
             }
         }
 
-
+        // store by bytes
         for (int i = 0; i < op_len; i++)
         {
             val_buff[i] = *(pVal + i);
         }
+
+
 
 
         p.cards.push_back( std::shared_ptr<Card>(new TXT_CARD(op_len, p.addr_counter, val_buff, id_field)) );
@@ -129,6 +133,8 @@ public:
 
         return op_len;
     }
+
+    ~DC() { std::printf("~DC()\n"); }
 };
 
 
