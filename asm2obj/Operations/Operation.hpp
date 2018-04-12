@@ -24,6 +24,7 @@ public:
     asm_mapping_u &asm_line;
     std::vector<TBASR>& baseregs;
     std::vector< std::shared_ptr<Card> >& cards;
+
 public:
     Params(char &sym_flag_,
            std::vector<TSYM>& sym_table_,
@@ -67,11 +68,17 @@ public:
     {
         return memcmp(op_name, this->op_name, 5) == 0;
     }
+
+
     void print()
     {
         std::printf("op_type=%i,op_code=%i,op_len=%i,op_name=%.5s\n",op_type, op_code, op_len, op_name);
     }
 
+
+    virtual ~Operation() = default;
+
+protected:
     void alignAddr(uint32_t& addr, uint8_t by)
     {
         if (addr % by != 0)
@@ -80,7 +87,12 @@ public:
         }
     }
 
-    virtual ~Operation() { std::printf("~Operation()\n"); };
+    template<typename Tchar>
+    bool isIdentifier(Tchar c)
+    {
+        return  (c == '$' || std::isalpha(c, std::locale{}) || c == '^');
+    }
+
 };
 
 #endif // _IBM_360_OPERATION_

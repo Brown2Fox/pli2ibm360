@@ -30,7 +30,8 @@ public:
         sym_name_asm_1 = strtok((char*)p.asm_line.structure.operand, ",");
         sym_name_asm_2 = strtok(nullptr, " ");
 
-        if (isalpha((int)*sym_name_asm_2)) // is begin from letter
+//        if (isalpha((int)*sym_name_asm_2))
+        if (isIdentifier(sym_name_asm_2[0]))
         {
             bool found = false;
             for (auto& sym: p.symbols) // iterate over p.symbols
@@ -53,6 +54,8 @@ public:
         assertf(BaseRegNum < p.baseregs.size(), "Wrong register number: %i", BaseRegNum);
 
         p.baseregs[BaseRegNum - 1].activity_flag = 'Y'; /* взвести призн.активн.  */
+
+
         if (sym_name_asm_1[0] == '*') // first parameter of ASM_LINE.structure.operand
         {
             p.baseregs[BaseRegNum - 1].base_addr = p.addr_counter;
@@ -75,7 +78,7 @@ public:
         return 0;
     }
 
-    ~USING() { std::printf("~USING()\n"); }
+    ~USING() override = default;
 };
 
 

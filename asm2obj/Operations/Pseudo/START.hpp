@@ -21,7 +21,7 @@ public:
 
         p.addr_counter = static_cast<uint32_t>(strtol((const char *)p.asm_line.structure.operand, nullptr, 10));
 
-        alignAddr(p.addr_counter, 8);
+//        alignAddr(p.addr_counter, 8);
 
         with(p.symbols.back(), sym)
             sym.val = p.addr_counter;
@@ -60,7 +60,7 @@ public:
         return 0;
     }
 
-    ~START() { std::printf("~START()\n");  }
+    ~START() override = default;
 };
 
 

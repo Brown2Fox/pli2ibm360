@@ -37,10 +37,13 @@ public:
         return format(fmt, card.CARD_TYPE, card.ID_FIELD);
     }
 
-    uint8_t* getBuffer() override {
-        return (uint8_t*)&card;
+    uint8_t* getBuffer() override
+    {
+        return reinterpret_cast<uint8_t*>(&card);
     }
 
+
+    ~END_CARD() override = default;
 };
 
 #endif // #define PROJECT_END_CARD_HPP

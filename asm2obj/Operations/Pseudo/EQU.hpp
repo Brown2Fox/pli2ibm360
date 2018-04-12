@@ -44,7 +44,7 @@ public:
     }
 
 
-    ~EQU() { std::printf("~EQU()\n"); }
+    ~EQU() override = default;
 };
 
 

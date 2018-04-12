@@ -14,11 +14,13 @@ public:
     END(): Operation(1, '\x00', "END  ") {};
 
 public:
+
     int process1(const Params& p) override
     {
         printf("END.\n\n");
         return -1;
     }
+
     int process2(const Params& p) override
     {
         printf("END.\n\n");
@@ -26,7 +28,7 @@ public:
         return -1;
     }
 
-    ~END() { std::printf("~END()\n");  }
+    ~END() override = default;
 };
 
 

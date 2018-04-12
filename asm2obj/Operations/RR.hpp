@@ -53,11 +53,10 @@ public:
         uint8_t R2 = 0;
 
 
-
         sym_name_asm_1 = strtok((char*)p.asm_line.structure.operand, ",");
         sym_name_asm_2 = strtok(nullptr, " ");
 
-        if (isalpha((int)*sym_name_asm_1))
+        if (isIdentifier(sym_name_asm_1[0]))
         {
             bool found = false;
             for (auto& sym: p.symbols) // iterate over p.symbols
@@ -77,7 +76,7 @@ public:
             R1 = static_cast<uint8_t>(strtol(sym_name_asm_1, nullptr, 10)); /*значен.выбр.   лексемы  */
         }
 
-        if (std::isalpha((int)*sym_name_asm_2))
+        if (isIdentifier(sym_name_asm_2[0]))
         {
             bool found = false;
             for (auto& sym: p.symbols) // iterate over p.symbols
@@ -108,7 +107,7 @@ public:
         return this->op_len;
     }
 
-    ~RR() { std::printf("~RR()\n"); }
+    ~RR() {  }
 };
 
 #endif //PROJECT_RR_HPP

@@ -5,8 +5,10 @@
 #ifndef PROJECT_DC_HPP
 #define PROJECT_DC_HPP
 
+#include <algorithm>
 
 #include <Operation.hpp>
+#include "../../ibm360_types.hpp"
 
 class DC: public Operation {
 
@@ -16,7 +18,7 @@ public:
 public:
     int process1(const  Params& p) override
     {
-        alignAddr(p.addr_counter, 4);
+//        alignAddr(p.addr_counter, 4);
 
         op_len = 4;
 
@@ -40,19 +42,16 @@ public:
 
     int process2(const Params& p) override
     {
-        alignAddr(p.addr_counter, 4);
+//        alignAddr(p.addr_counter, 4);
 
-        uint8_t val_buff[56] = {0x40};
-        uint8_t id_field[8] = {0x0};
-
-        char* sym_name_tbl = nullptr;
-        char* val_asm = nullptr;
+        uint8_t val_buff[56] = {[0 ... 55] = 0x40};
+        uint8_t id_field[8] = {[0 ... 7] = 0x0};
 
         union { int32_t _int; float_t _float; uint32_t _address; } val = {0};
-        uint8_t* pVal = (uint8_t*)&val;
+        auto pVal = reinterpret_cast<uint8_t*>(&val);
 
-        enum OPT { Nothing, Int, Float, Addr };
-        int opt = OPT::Nothing;
+        enum class OPT : int { Nothing, Int, Float, Addr };
+        auto opt = OPT::Nothing;
         if (std::memcmp(p.asm_line.structure.operand, "F'", 2) == 0) opt = OPT::Int;
         if (std::memcmp(p.asm_line.structure.operand, "E'", 2) == 0) opt = OPT::Float;
         if (std::memcmp(p.asm_line.structure.operand, "A(", 2) == 0) opt = OPT::Addr;
@@ -61,7 +60,7 @@ public:
         {
             case OPT::Int:
             {
-                val_asm = std::strtok((char *) p.asm_line.structure.operand + 2, "'");
+                char* val_asm = std::strtok((char *) p.asm_line.structure.operand + 2, "'");
                 val._int = std::strtol(val_asm, nullptr, 10);
 
                 pVal = (uint8_t *) &val._int;
@@ -73,7 +72,7 @@ public:
 
             case OPT::Float:
             {
-                val_asm = std::strtok((char *) p.asm_line.structure.operand + 2, "'");
+                char* val_asm = std::strtok((char *) p.asm_line.structure.operand + 2, "'");
                 val._float = std::strtof(val_asm, nullptr);
 
                 pVal = (uint8_t *) &val._float;
@@ -85,11 +84,11 @@ public:
 
             case OPT::Addr:
             {
-                val_asm = std::strtok((char *) p.asm_line.structure.operand + 2, ")");
+                char* val_asm = std::strtok((char *) p.asm_line.structure.operand + 2, ")");
 
                 for (auto &sym: p.symbols) // iterate over p.symbols
                 {
-                    sym_name_tbl = std::strtok((char *) sym.name, " ");
+                    char* sym_name_tbl = std::strtok((char *) sym.name, " ");
                     if (strcmp(sym_name_tbl, val_asm) == 0)
                     {
                         val._address = sym.val;
@@ -114,13 +113,11 @@ public:
             }
         }
 
-        // store by bytes
+        // store by bytes in reverse order
         for (int i = 0; i < op_len; i++)
         {
-            val_buff[i] = *(pVal + i);
+            val_buff[i] = *(pVal + (op_len-1) - i);
         }
-
-
 
 
         p.cards.push_back( std::shared_ptr<Card>(new TXT_CARD(op_len, p.addr_counter, val_buff, id_field)) );
@@ -134,7 +131,7 @@ public:
         return op_len;
     }
 
-    ~DC() { std::printf("~DC()\n"); }
+    ~DC() override = default;
 };
 
 

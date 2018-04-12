@@ -64,10 +64,13 @@ public:
                       card.ID_FIELD);
     }
 
-    uint8_t* getBuffer() override {
-        return (uint8_t*)&card;
+    uint8_t* getBuffer() override
+    {
+        return reinterpret_cast<uint8_t*>(&card);
     }
 
+
+    ~TXT_CARD() override = default;
 };
 
 

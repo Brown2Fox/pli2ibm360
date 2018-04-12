@@ -46,11 +46,9 @@ public /*METHODS*/:
     int process2(const Params& p) override
     {
         uint8_t id_field[8] = {' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '};
+
         char* sym_name_tbl = nullptr;
-        char* sym_name_asm_1 = nullptr;
-        char* sym_name_asm_2 = nullptr;
-        char* PTR_ = nullptr;
-        int B2D2 = 0;
+
 
         constexpr uint8_t BITS = 12;
         constexpr uint16_t MAX_DISP = ipow(2, BITS); // 2^12 == 0x1000
@@ -60,18 +58,16 @@ public /*METHODS*/:
         uint16_t B2 = 0;
         uint16_t D2 = 0;
 
+        char* sym_name_asm_1 = strtok(reinterpret_cast<char*>(p.asm_line.structure.operand), ",");
+        char* sym_name_asm_2 = strtok(nullptr, " ");
 
-
-        sym_name_asm_1 = strtok((char*)p.asm_line.structure.operand, ",");
-        sym_name_asm_2 = strtok(nullptr, " ");
-
-        if (isalpha((int)*sym_name_asm_1))
+        if (isIdentifier(sym_name_asm_1[0]))
         {
             bool found = false;
             for (auto& sym: p.symbols) // iterate over p.symbols
             {
                 sym_name_tbl = strtok((char*)sym.name, " ");
-                if (!strcmp(sym_name_tbl, sym_name_asm_1)) /* и при совпадении:      */
+                if (strcmp(sym_name_tbl, sym_name_asm_1) == 0) /* и при совпадении:      */
                 {
                     // FIXME: magic
                     R1 = (uint8_t) sym.val;
@@ -87,13 +83,13 @@ public /*METHODS*/:
             R1 = (uint8_t) strtol(sym_name_asm_1, nullptr, 10);
         }
 
-        if (isalpha((int)*sym_name_asm_2))
+        if (isIdentifier(sym_name_asm_2[0]))
         {
             bool found = false;
             for (auto& sym: p.symbols) // iterate over p.symbols
             {
                 sym_name_tbl = strtok((char*)sym.name, " ");
-                if (!strcmp(sym_name_tbl, sym_name_asm_2))
+                if (strcmp(sym_name_tbl, sym_name_asm_2) == 0)
                 {
                     D2 = MAX_DISP;
 
@@ -144,6 +140,7 @@ public /*METHODS*/:
                D2, op_len);
 
 
+
         // this is for conversion between little-endian and big-endian notations on writing uint16_t variable
         std::swap(rx.buffer[2], rx.buffer[3]);
 
@@ -157,7 +154,7 @@ public /*METHODS*/:
         return op_len;
     }
 
-    ~RX() { std::printf("~RX()\n"); }
+    ~RX() {  }
 };
 
 #endif //PROJECT_RX_HPP

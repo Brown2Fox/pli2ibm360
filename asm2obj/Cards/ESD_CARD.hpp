@@ -90,9 +90,12 @@ public:
                 card.ID_FIELD);
     }
 
-    uint8_t* getBuffer() override {
-        return (uint8_t*)&card;
+    uint8_t* getBuffer() override
+    {
+        return reinterpret_cast<uint8_t*>(&card);
     }
+
+    ~ESD_CARD() override = default;
 };
 
 uint8_t ESD_CARD::ID_NUM = 0;

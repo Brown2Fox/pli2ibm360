@@ -16,6 +16,8 @@ class Card
 public:
     virtual uint8_t* getBuffer() = 0;
     virtual std::string getFormatOutput() = 0;
+
+    virtual ~Card() = default;
 };
 
 
