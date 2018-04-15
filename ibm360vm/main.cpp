@@ -6,9 +6,17 @@
 #include <sstream>
 #include <memory>
 #include <cmath>
+#include <algorithm>
+
+#if defined(_WIN32) || defined(_WIN64)
+#include <ncurses/ncurses.h>
+#else
+#include <ncurses.h>
+#endif
 
 static const uint32_t REGISTERS_AMOUNT = 16;
 static const uint32_t OPERATIONS_AMOUNT = 6;
+static const uint32_t OPERATION_NAME_LENGTH = 5;
 static const uint32_t CARD_SIZE = 80;
 static const uint32_t MEMORY_SIZE = 1024;
 static const uint32_t START_ADDRESS = 0;
@@ -17,6 +25,8 @@ static const uint32_t TWO_BYTES_NUMBER_LIMIT = 10000;
 static const uint32_t THREE_BYTES_NUMBER_LIMIT = 1000000;
 static const uint32_t SYMBOL_LENGTH = 8;
 static const uint32_t ADDR_LENGTH = 4;
+static const int RR_OPERATION = 0x0;
+static const int RX_OPERATION = 0x1;
 
 static unsigned char MEMORY[MEMORY_SIZE];
 static std::map<std::string, uint32_t> GLOBAL_TABLE;
@@ -33,6 +43,22 @@ int S_OP();
 typedef int(*handler)(unsigned char *);
 int RR(unsigned char *operation);
 int RX(unsigned char *operation);
+
+struct VM_UI
+{
+    WINDOW *REGISTERS;
+    WINDOW *PROGRAM_TEXT;
+    WINDOW *DUMP;
+    WINDOW *STATUS_BAR;
+    WINDOW *HELP;
+
+    int OPERATION_TYPE;
+    int DUMP_INDEX;
+    int TEXT_X;
+    int TEXT_Y;
+};
+
+static VM_UI UI;
 
 struct REGISTERS_MAP
 {
@@ -61,7 +87,7 @@ unsigned long fakeAddress(unsigned long address) // Return fake address
 
 struct OPERATION
 {
-    char NAME[5];
+    char NAME[OPERATION_NAME_LENGTH];
     char CODE;
     int LENGTH;
     implementation IMPLEMENTATION;
@@ -141,13 +167,243 @@ struct END
 
 std::vector<CARD> CARDS;
 
+void initUI()
+{
+    // Init curses
+    initscr();
+    curs_set(0);
+    noecho();
+    cbreak();
+    keypad(stdscr, TRUE);
+    start_color();
+
+    refresh();
+
+    if (has_colors())
+    {
+        init_pair(COLOR_BLUE, COLOR_WHITE, COLOR_BLUE);
+        init_pair(COLOR_GREEN, COLOR_BLACK, COLOR_GREEN);
+        init_pair(COLOR_RED, COLOR_WHITE, COLOR_RED);
+        init_pair(COLOR_CYAN, COLOR_BLACK, COLOR_CYAN);
+        init_pair(COLOR_MAGENTA, COLOR_WHITE, COLOR_MAGENTA);
+    }
+
+    // Init UI
+    UI.REGISTERS = newwin(16, 12, 0, 68);
+    wbkgd(UI.REGISTERS, COLOR_PAIR(COLOR_BLUE));
+    UI.TEXT_X = 0;
+    UI.TEXT_Y = 14;
+    UI.PROGRAM_TEXT = newwin(11, 67, UI.TEXT_Y, UI.TEXT_X);
+    wbkgd(UI.PROGRAM_TEXT, COLOR_PAIR(COLOR_GREEN));
+    UI.DUMP = newwin(8, 67, 15, 0);
+    wbkgd(UI.DUMP, COLOR_PAIR(COLOR_RED));
+    UI.STATUS_BAR = newwin(1, 80, 23, 0);
+    wbkgd(UI.STATUS_BAR, COLOR_PAIR(COLOR_CYAN));
+    UI.HELP = newwin(1, 80, 24, 0);
+    wbkgd(UI.HELP, COLOR_PAIR(COLOR_MAGENTA));
+    waddstr(UI.HELP, "PgUp,PgDn,Up,Down->viewing a dump; Enter->execute next command");
+    keypad(UI.HELP, TRUE);
+
+    wrefresh(UI.REGISTERS);
+    wrefresh(UI.PROGRAM_TEXT);
+    wrefresh(UI.DUMP);
+    wrefresh(UI.STATUS_BAR);
+    wrefresh(UI.HELP);
+
+    UI.DUMP_INDEX = (int)REGISTERS_DATA.I;
+}
+
+void updateDumpWindow()
+{
+    int LOCAL_DUMP_INDEX = UI.DUMP_INDEX;
+    werase(UI.DUMP);
+    for (int index = 0; index < 15; index++)
+    {
+        wprintw(UI.DUMP, "%.06lX: ", fakeAddress(LOCAL_DUMP_INDEX));
+        for (int wordIndex = 0; wordIndex < 4; wordIndex++)
+        {
+            for (int byteIndex = 0; byteIndex < 4; byteIndex++)
+                wprintw(UI.DUMP, "%.02X", MEMORY[LOCAL_DUMP_INDEX + wordIndex * 4 + byteIndex]);
+            waddstr(UI.DUMP, " ");
+        }
+
+        waddstr(UI.DUMP, "/* ");
+        for (int dataIndex = 0; dataIndex < 16; dataIndex++)
+        {
+            if (isprint(MEMORY[LOCAL_DUMP_INDEX + dataIndex]))
+            {
+                waddch(UI.DUMP, MEMORY[LOCAL_DUMP_INDEX + dataIndex]);
+                wrefresh(UI.DUMP);
+            } else
+            {
+                waddstr(UI.DUMP, ".");
+            }
+        }
+
+        waddstr(UI.DUMP, " */\n");
+        LOCAL_DUMP_INDEX += 16;
+    }
+    wrefresh(UI.DUMP);
+}
+
+void updateUI(int i)
+{
+    werase(UI.PROGRAM_TEXT);
+    wprintw(UI.PROGRAM_TEXT, "%.06lX: ", fakeAddress(REGISTERS_DATA.I));
+    for (int index = 0; index < OPERATIONS[i].LENGTH; ++index)
+    {
+        wprintw(UI.PROGRAM_TEXT, "%.02X", MEMORY[REGISTERS_DATA.I + index]);
+    }
+
+    if (UI.OPERATION_TYPE == RR_OPERATION)
+    {
+        // Render RR operation
+        waddstr(UI.PROGRAM_TEXT, "      ");
+        for (int index = 0; index < OPERATION_NAME_LENGTH; ++index)
+        {
+            waddch(UI.PROGRAM_TEXT, OPERATIONS[i].NAME[index]);
+        }
+        waddstr(UI.PROGRAM_TEXT, " ");
+        wprintw(UI.PROGRAM_TEXT, "%1d, ", REGISTERS_DATA.R1);
+        wprintw(UI.PROGRAM_TEXT, "%1d\n", REGISTERS_DATA.R2);
+    }
+    if (UI.OPERATION_TYPE == RX_OPERATION)
+    {
+        // Render RX operation
+        waddstr(UI.PROGRAM_TEXT, "  ");
+        for (int index = 0; index < OPERATION_NAME_LENGTH; ++index)
+        {
+            waddch(UI.PROGRAM_TEXT, OPERATIONS[i].NAME[index]);
+        }
+        waddstr(UI.PROGRAM_TEXT, " ");
+        wprintw(UI.PROGRAM_TEXT, "%1d, ", REGISTERS_DATA.R1);
+        wprintw(UI.PROGRAM_TEXT, "X'%.3X'(", REGISTERS_DATA.D);
+        wprintw(UI.PROGRAM_TEXT, "%1d, ", REGISTERS_DATA.X);
+        wprintw(UI.PROGRAM_TEXT, "%1d)", REGISTERS_DATA.B);
+        wprintw(UI.PROGRAM_TEXT, "        %.06lX       \n", fakeAddress(REGISTERS_DATA.ADDR));
+    }
+//    if (UI.TEXT_Y > 4)
+//        mvwin(UI.PROGRAM_TEXT, UI.TEXT_Y--, UI.TEXT_X);
+//    else
+//    {
+//        char winstr[80];
+//        for (int index = 0; index < UI.TEXT_Y - 1; index++)
+//        {
+//            mvwinnstr(UI.PROGRAM_TEXT, index, 0, winstr, 67);
+//            mvwaddnstr(UI.PROGRAM_TEXT, index + 1, 0, winstr, 67);
+//            wrefresh(UI.PROGRAM_TEXT);
+//        }
+//    }
+    wrefresh(UI.PROGRAM_TEXT);
+
+    werase(UI.REGISTERS);
+    for (int index = 0; index < REGISTERS_AMOUNT; index++)
+    {
+        (index < 10) ? waddstr(UI.REGISTERS, "R0") : waddstr(UI.REGISTERS, "R");
+        wprintw(UI.REGISTERS, "%d:", index);
+        wprintw(UI.REGISTERS, "%.08lX", REGISTERS_DATA.GENERAL_REGISTER[index]);
+    }
+    wrefresh(UI.REGISTERS);
+
+    werase(UI.STATUS_BAR);
+    waddstr(UI.STATUS_BAR, "Readiness to execute the next command with the address ");
+    wprintw(UI.STATUS_BAR, "%.06lX", fakeAddress(REGISTERS_DATA.I));
+    waddstr(UI.STATUS_BAR, "\n");
+    wrefresh(UI.STATUS_BAR);
+
+    werase(UI.HELP);
+    waddstr(UI.HELP, "PgUp,PgDn,Up,Down->viewing a dump; Enter->execute next command");
+    wrefresh(UI.HELP);
+
+    updateDumpWindow();
+}
+
+void handleKey()
+{
+    int keyCode = 0;
+    while (true)
+    {
+        keyCode = wgetch(UI.HELP);
+        switch (keyCode)
+        {
+            case 10:
+            {
+                return;
+            }
+
+            case KEY_UP:
+            {
+                if (UI.DUMP_INDEX > 16)
+                {
+                    UI.DUMP_INDEX = UI.DUMP_INDEX - 16;
+                }
+                else
+                {
+                    UI.DUMP_INDEX = 0;
+                }
+                updateDumpWindow();
+                break;
+            }
+
+            case KEY_DOWN:
+            {
+                if (UI.DUMP_INDEX < MEMORY_SIZE - 16)
+                {
+                    UI.DUMP_INDEX = UI.DUMP_INDEX + 16;
+                }
+                else
+                {
+                    UI.DUMP_INDEX = MEMORY_SIZE;
+                }
+                updateDumpWindow();
+                break;
+            }
+
+            case KEY_PPAGE:
+            {
+                if (UI.DUMP_INDEX > 128)
+                {
+                    UI.DUMP_INDEX = UI.DUMP_INDEX - 128;
+                }
+                else
+                {
+                    UI.DUMP_INDEX = 0;
+                }
+                updateDumpWindow();
+                break;
+            }
+
+            case KEY_NPAGE:
+            {
+                if (UI.DUMP_INDEX < MEMORY_SIZE - 128)
+                {
+                    UI.DUMP_INDEX = UI.DUMP_INDEX + 128;
+                }
+                else
+                {
+                    UI.DUMP_INDEX = MEMORY_SIZE;
+                }
+                updateDumpWindow();
+                break;
+            }
+        }
+    }
+}
+
 int zeroScan(const char *modulesList)
 {
     std::ifstream modules(modulesList);
+    if (!modules.is_open())
+    {
+        std::cout << "Module list" << modulesList << " don't opened\n";
+        return 0;
+    }
     std::string moduleName;
     std::vector<std::string> modulesNames;
     while (std::getline(modules, moduleName))
     {
+        moduleName.erase(std::remove(moduleName.begin(), moduleName.end(), '\n'), moduleName.end());
+        moduleName.erase(std::remove(moduleName.begin(), moduleName.end(), '\r'), moduleName.end());
         modulesNames.push_back(moduleName);
     }
     modules.close();
@@ -158,9 +414,10 @@ int zeroScan(const char *modulesList)
         std::vector<TXT> txts;
         std::vector<RLD> rlds;
         std::vector<END> ends;
-        std::ifstream module(modulesName);
+        std::ifstream module(modulesName.c_str());
         if (!module.is_open())
         {
+            std::cout << "Module don't opened\n";
             return 0;
         }
         module.seekg(0, std::ios_base::end);
@@ -200,6 +457,7 @@ int zeroScan(const char *modulesList)
                     rlds.push_back(*((RLD *)moduleCard));
                     break;
                 default:
+                    std::cout << "Wrong card\n";
                     return 0; // Wrong card
             }
         }
@@ -383,6 +641,7 @@ int interpreter()
     int result = 0;
     REGISTERS_DATA.I = 0;
     unsigned long CURRENT_INDEX = 0;
+    initUI();
     while (true)
     {
         CURRENT_INDEX = REGISTERS_DATA.I;
@@ -394,6 +653,8 @@ int interpreter()
                 {
                     return result;
                 }
+                updateUI(i);
+                handleKey();
                 if ((result = OPERATIONS[i].IMPLEMENTATION()) != 0)
                 {
                     return result;
@@ -500,6 +761,8 @@ int RR(unsigned char *operation)
             break;
         }
     }
+    // Mark for UI that it was RR operation
+    UI.OPERATION_TYPE = RR_OPERATION;
     return 0;
 }
 
@@ -518,11 +781,18 @@ int RX(unsigned char *operation)
             break;
         }
     }
+    // Mark for UI that it was RX operation
+    UI.OPERATION_TYPE = RX_OPERATION;
     return 0;
 }
 
-int main() {
-    if (!zeroScan("spis.mod"))
+int main(int argc, char **argv) {
+    if (argc < 2)
+    {
+        std::cout << "Pass path to file, which specify binaries to load\n";
+        return -1;
+    }
+    if (!zeroScan(argv[1]))
         return 1;
     if (!firstScan())
         return 2;
@@ -530,5 +800,11 @@ int main() {
         return 3;
     if (!interpreter())
         return 4;
+
+    delwin(UI.REGISTERS);
+    delwin(UI.STATUS_BAR);
+    delwin(UI.DUMP);
+    delwin(UI.HELP);
+    endwin();
     return 0;
 }
