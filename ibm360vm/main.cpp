@@ -248,7 +248,6 @@ void updateDumpWindow()
 
 void updateUI(int i)
 {
-    werase(UI.PROGRAM_TEXT);
     wprintw(UI.PROGRAM_TEXT, "%.06lX: ", fakeAddress(REGISTERS_DATA.I));
     for (int index = 0; index < OPERATIONS[i].LENGTH; ++index)
     {
@@ -267,7 +266,7 @@ void updateUI(int i)
         wprintw(UI.PROGRAM_TEXT, "%1d, ", REGISTERS_DATA.R1);
         wprintw(UI.PROGRAM_TEXT, "%1d\n", REGISTERS_DATA.R2);
     }
-    if (UI.OPERATION_TYPE == RX_OPERATION)
+    else if (UI.OPERATION_TYPE == RX_OPERATION)
     {
         // Render RX operation
         waddstr(UI.PROGRAM_TEXT, "  ");
@@ -282,18 +281,21 @@ void updateUI(int i)
         wprintw(UI.PROGRAM_TEXT, "%1d)", REGISTERS_DATA.B);
         wprintw(UI.PROGRAM_TEXT, "        %.06lX       \n", fakeAddress(REGISTERS_DATA.ADDR));
     }
-//    if (UI.TEXT_Y > 4)
-//        mvwin(UI.PROGRAM_TEXT, UI.TEXT_Y--, UI.TEXT_X);
-//    else
-//    {
-//        char winstr[80];
-//        for (int index = 0; index < UI.TEXT_Y - 1; index++)
-//        {
-//            mvwinnstr(UI.PROGRAM_TEXT, index, 0, winstr, 67);
-//            mvwaddnstr(UI.PROGRAM_TEXT, index + 1, 0, winstr, 67);
-//            wrefresh(UI.PROGRAM_TEXT);
-//        }
-//    }
+
+    if (UI.TEXT_Y > 4)
+        mvwin(UI.PROGRAM_TEXT, UI.TEXT_Y--, UI.TEXT_X);
+    else
+    {
+        char winstr[80];
+        for (int index = 1; index < 11; index++)
+        {
+            mvwinnstr(UI.PROGRAM_TEXT, index, 0, winstr, 67);
+            wmove(UI.PROGRAM_TEXT, index, 0);
+            wclrtoeol(UI.PROGRAM_TEXT);
+            mvwaddnstr(UI.PROGRAM_TEXT, index - 1, 0, winstr, 67);
+            wrefresh(UI.PROGRAM_TEXT);
+        }
+    }
     wrefresh(UI.PROGRAM_TEXT);
 
     werase(UI.REGISTERS);
