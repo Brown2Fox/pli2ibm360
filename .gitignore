@@ -2,3 +2,6 @@
 cmake-build-debug/
 .build/
 .cmake_build/
+
+ex2.asm
+ex1.asm

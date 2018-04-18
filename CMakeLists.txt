@@ -2,11 +2,18 @@
 cmake_minimum_required(VERSION 3.4)
 
 set(CMAKE_C_COMPILER /usr/bin/clang)
+set(CMAKE_CXX_COMPILER /usr/bin/clang++)
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-everything -std=c++11")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-everything")
 
-set(ASM2OBJ_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/asm2obj/asm2obj.c)
+set(ASM2OBJ_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/asm2obj/asm2obj.cpp)
 set(IBM360VM_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/ibm360vm/ibm360vm.c)
 set(PLI2ASM_V1_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/pli2asm_v1/pli2asm_v1.c)
+
+include_directories(include)
+include_directories(asm2obj/Operations)
+include_directories(asm2obj/Cards)
 
 find_package(BISON REQUIRED)
 find_package(FLEX REQUIRED)

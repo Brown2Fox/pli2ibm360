@@ -1,18 +1,31 @@
 
 DIR=./.build
+
 PL1_FILE_NAME=examppl.pli
-ASM_FILE_NAME=compiled.asm
-OBJ_FILE_NAME=builded.bin
 
-all: o1 o2 o3
+ASM_FILE_NAME1=ex1.asm
+ASM_FILE_NAME2=ex2.asm
+
+OBJ_FILE_NAME1=ex1.bin
+OBJ_FILE_NAME2=ex2.bin
+
+all: pli1 asm ibm pli
+
+asm: asm1 asm2
 
 
-o1: 
+pli: 
+	cd $(DIR) && ./pli2asm -i ../$(PL1_FILE_NAME) -o $(ASM_FILE_NAME1)
+
+pli1: 
 	cd $(DIR) && ./pli2asm_v1 -i ../$(PL1_FILE_NAME) -o $(ASM_FILE_NAME) -v
 
-o2: 
-	cd $(DIR) && ./asm2obj -i $(ASM_FILE_NAME) -o $(OBJ_FILE_NAME) -v
+asm1: 
+	cd $(DIR) && ./asm2obj -i $(ASM_FILE_NAME1) -o $(OBJ_FILE_NAME1) -v
 
-o3: 
-	cd $(DIR) && ./ibm360vm -i $(OBJ_FILE_NAME)
+asm2: 
+	cd $(DIR) && ./asm2obj -i $(ASM_FILE_NAME2) -o $(OBJ_FILE_NAME2) -v
+
+ibm: 
+	cd $(DIR) && ./ibm360vm -i $(OBJ_FILE_NAME1)
 
