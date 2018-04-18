@@ -90,7 +90,7 @@ protected:
     template<typename Tchar>
     bool isIdentifier(Tchar c)
     {
-        return  (c == '$' || std::isalpha(c, std::locale{}) || c == '^');
+        return  (c == '$' || c == '^' || std::isalpha(c, std::locale{}));
     }
 
 };

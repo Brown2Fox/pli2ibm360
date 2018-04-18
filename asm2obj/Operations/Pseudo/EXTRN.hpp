@@ -29,7 +29,7 @@ public:
 
         printf("EXTRN: sym=%s\n", sym_name_asm);
 
-        p.cards.push_back( std::shared_ptr<Card>(new ESD_CARD(program_len, p.addr_counter, sym_name_asm, 2)) );
+        p.cards.push_back( std::shared_ptr<Card>(new ESD_CARD(program_len, p.addr_counter, sym_name_asm, /*esd type*/2)) );
         return 0;
     }
 
