@@ -6,8 +6,8 @@ PL1_FILE_NAME=examppl.pli
 ASM_FILE_NAME1=ex1.asm
 ASM_FILE_NAME2=ex2.asm
 
-OBJ_FILE_NAME1=ex1.bin
-OBJ_FILE_NAME2=ex2.bin
+OBJ_FILE_NAME1=ex1.tex
+OBJ_FILE_NAME2=ex2.tex
 
 all: pli1 asm ibm pli
 

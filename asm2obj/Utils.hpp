@@ -14,7 +14,6 @@
 #define assertf(A, M, ...) if(!(A)) {log_error(M, ##__VA_ARGS__); assert(A); }
 
 
-
 #define with(x,xx)  { auto& (xx) = (x);
 #define end_with }
 

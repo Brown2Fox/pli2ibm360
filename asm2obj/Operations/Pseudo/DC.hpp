@@ -18,7 +18,7 @@ public:
 public:
     int process1(const  Params& p) override
     {
-//        alignAddr(p.addr_counter, 4);
+        alignAddr(p.addr_counter, 4);
 
         op_len = 4;
 
@@ -42,7 +42,7 @@ public:
 
     int process2(const Params& p) override
     {
-//        alignAddr(p.addr_counter, 4);
+        alignAddr(p.addr_counter, 4);
 
         uint8_t val_buff[56] = {[0 ... 55] = 0x40};
         uint8_t id_field[8] = {[0 ... 7] = 0x0};
