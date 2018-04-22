@@ -1632,13 +1632,7 @@ int OPR2()
     memcpy(ASM_CARD._BUFCARD.OPERAND, "*,^BASE", 7);
     ZKARD();
 
-    memcpy(ASM_CARD._BUFCARD.OPERAC, "ST", 2);
-    memcpy(ASM_CARD._BUFCARD.OPERAND, "^BASE,$SWAP", 11);
-    ZKARD();
 
-    memcpy(ASM_CARD._BUFCARD.OPERAC, "L", 1);
-    memcpy(ASM_CARD._BUFCARD.OPERAND, "^SBASE,$SWAP", 12);
-    ZKARD();
 
     return 0;
 }
@@ -1720,6 +1714,14 @@ int OCL1()
 
 int OCL2()
 {
+    memcpy(ASM_CARD._BUFCARD.OPERAC, "ST", 2);
+    memcpy(ASM_CARD._BUFCARD.OPERAND, "^BASE,$SWAP", 11);
+    ZKARD();
+
+    memcpy(ASM_CARD._BUFCARD.OPERAC, "L", 1);
+    memcpy(ASM_CARD._BUFCARD.OPERAND, "^SBASE,$SWAP", 12);
+    ZKARD();
+
     memcpy(ASM_CARD._BUFCARD.OPERAC, "ST", 2);
     memcpy(ASM_CARD._BUFCARD.OPERAND, "^RET,$S0", 8);
     ZKARD();

@@ -16,7 +16,7 @@ all: pli asm ibm
 
 pli: pli1 pli2
 asm: asm1 asm2
-	echo -n "ex1.tex\nex2.tex" > spis.mod
+	echo -n "ex1.tex\nex2.tex\n" > $(DIR)/spis.mod
 
 pli1: 
 	cd $(DIR) && ./pli2asm_v1 -i $(PL1_FILE_NAME1) -o $(ASM_FILE_NAME1) -v
