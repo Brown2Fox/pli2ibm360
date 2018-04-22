@@ -1414,14 +1414,9 @@ int OEN2()
     FORM();                                        /* форматируем ПЛ1-опера- */
     /* тор END                */
 
-    memcpy(ASM_CARD._BUFCARD.OPERAC, "BCR", 3);  /* формируем код безуслов-*/
-    /*ного возврата управления*/
-    /* в вызывающую программу */
-
-    memcpy(ASM_CARD._BUFCARD.OPERAND, "15,14", 5);/* операнды команды и     */
-
-    memcpy(ASM_CARD._BUFCARD.COMM,                /* поле построчного комен-*/
-           "Выход из программы", 18);/* тария                  */
+    memcpy(ASM_CARD._BUFCARD.OPERAC, "BCR", 3);
+    memcpy(ASM_CARD._BUFCARD.OPERAND, "15,^RET", 7);
+    memcpy(ASM_CARD._BUFCARD.COMM, "Return", 6);
 
     ZKARD();                                       /* запомнить опреацию     */
     /* Ассемблера             */
@@ -1464,8 +1459,7 @@ int OEN2()
                 ASM_CARD._BUFCARD.OPERAND[strlen        /* замыкающий апостроф    */
                         (ASM_CARD._BUFCARD.OPERAND)] = '\'';  /*          и             */
 
-                memcpy(ASM_CARD._BUFCARD.COMM,          /* поле построчного комен-*/
-                       "Определение переменной", 22);  /* тария                  */
+                memcpy(ASM_CARD._BUFCARD.COMM, "Variable define", 15);
 
                 ZKARD();                                 /* запомнить операцию     */
                 /*    Ассемблера          */
@@ -1501,14 +1495,14 @@ int OEN2()
     ZKARD();                                       /* запоминание ее         */
 
     memcpy(ASM_CARD._BUFCARD.METKA, "$SWAP", 5);  /* формирование DC-псев- */
-    memcpy(ASM_CARD._BUFCARD.OPERAC, "DC", 2);   /* дооперации определения */
+    memcpy(ASM_CARD._BUFCARD.OPERAC, "DS", 2);   /* дооперации определения */
     memcpy(ASM_CARD._BUFCARD.OPERAND, "F", 1);   /* номера базового регист-*/
     /* ра общего назначения   */
     /*            и           */
     ZKARD();                                       /* запоминание ее         */
 
     memcpy(ASM_CARD._BUFCARD.METKA, "$S0", 3);  /* формирование DC-псев- */
-    memcpy(ASM_CARD._BUFCARD.OPERAC, "DC", 2);   /* дооперации определения */
+    memcpy(ASM_CARD._BUFCARD.OPERAC, "DS", 2);   /* дооперации определения */
     memcpy(ASM_CARD._BUFCARD.OPERAND, "F", 1);   /* номера базового регист-*/
     /* ра общего назначения   */
     /*            и           */
@@ -1519,11 +1513,13 @@ int OEN2()
     /* операции END,          */
     i = 0;
 
-    while (FORMT[1][i] != '\x0')                 /* ее операнда            */
-        ASM_CARD._BUFCARD.OPERAND[i] = FORMT[1][i++];/*         и              */
+    while (FORMT[1][i] != '\x0')
+    {
+        ASM_CARD._BUFCARD.OPERAND[i] = FORMT[1][i];
+        i++;
+    }
 
-    memcpy(ASM_CARD._BUFCARD.COMM,                /* построчного коментария */
-           "Конец программы", 15);
+    memcpy(ASM_CARD._BUFCARD.COMM, "Program end", 11);
 
     ZKARD();                                       /* запоминание псевдоопе- */
     /* рации                  */
@@ -1575,8 +1571,7 @@ int OPA2()
                 ASM_CARD._BUFCARD.OPERAND[strlen    /*              и         */
                         (ASM_CARD._BUFCARD.OPERAND)] = ' ';
 
-                memcpy(ASM_CARD._BUFCARD.COMM,      /* построчный коментарий  */
-                       "Формирование значения арифм.выражения", 37);
+                memcpy(ASM_CARD._BUFCARD.COMM, "Form Arithm Expressiom", 22);
                 ZKARD();                             /* запомнить операцию     */
                 /* Ассемблера  и          */
                 return 0;                             /* завершить программу    */
@@ -1619,29 +1614,36 @@ int OPR2()
 
     memcpy(ASM_CARD._BUFCARD.OPERAC, "START", 5);/* достраиваем код и опе- */
     memcpy(ASM_CARD._BUFCARD.OPERAND, "0", 1);   /* ранды  в  START-псевдо-*//* операции Ассемблера    */
-    memcpy(ASM_CARD._BUFCARD.COMM, "Начало программы", 16);
+    memcpy(ASM_CARD._BUFCARD.COMM, "Program begin", 13);
     ZKARD();                                       /* запоминаем карту Ассем-*/
     /* блера                  */
 
     memcpy(ASM_CARD._BUFCARD.OPERAC, "BALR", 4); /* формируем BALR-операцию*/
     memcpy(ASM_CARD._BUFCARD.OPERAND, "^BASE,0", 7); /* Ассемблера             */
-    memcpy(ASM_CARD._BUFCARD.COMM, "Загрузить регистр базы", 22);
+    memcpy(ASM_CARD._BUFCARD.COMM, "Declare BaseReg", 15);
     ZKARD();                                       /* и запоминаем ее        */
 
     memcpy(ASM_CARD._BUFCARD.OPERAC, "USING", 5);/* формируем USING-псевдо-*/
     memcpy(ASM_CARD._BUFCARD.OPERAND, "*,^BASE", 7); /* операцию Ассемблера    */
-    memcpy(ASM_CARD._BUFCARD.COMM, "Назначить регистр базой", 23);
+    memcpy(ASM_CARD._BUFCARD.COMM, "Define BaseReg", 14);
     ZKARD();                                       /* и запоминаем ее        */
 
     memcpy(ASM_CARD._BUFCARD.OPERAC, "ST", 2); /* формируем ST-операцию*/
-    memcpy(ASM_CARD._BUFCARD.OPERAND, "^RET,$S0", 8); /* Ассемблера             */
-    memcpy(ASM_CARD._BUFCARD.COMM, "Сохраняем адрес возврата", 24);
+    memcpy(ASM_CARD._BUFCARD.OPERAND, "^BASE,$SWAP", 11); /* Ассемблера             */
+    memcpy(ASM_CARD._BUFCARD.COMM, "Save BaseAddr", 13);
+    ZKARD();
+
+    memcpy(ASM_CARD._BUFCARD.OPERAC, "L", 1); /* формируем ST-операцию*/
+    memcpy(ASM_CARD._BUFCARD.OPERAND, "^SBASE,$SWAP", 12); /* Ассемблера             */
+    memcpy(ASM_CARD._BUFCARD.COMM, "Save BaseAddr", 13);
     ZKARD();
 
     memcpy(ASM_CARD._BUFCARD.OPERAC, "ST", 2); /* формируем ST-операцию*/
-    memcpy(ASM_CARD._BUFCARD.OPERAND, "^BASE,$SWAP", 11); /* Ассемблера             */
-    memcpy(ASM_CARD._BUFCARD.COMM, "Сохраняем базовый адрес", 23);
+    memcpy(ASM_CARD._BUFCARD.OPERAND, "^RET,$S0", 8); /* Ассемблера             */
+    memcpy(ASM_CARD._BUFCARD.COMM, "Save RetAddr", 12);
     ZKARD();
+
+
 
     return 0;                                       /* завершить подпрограмму */
 }
@@ -1659,11 +1661,16 @@ int PRO2()                                       /*прогр.формирует
 
     FILE *fp;
 
-    if ((fp = fopen(globalArgs.outFileName, "wb")) == NULL)     /*при неудачн.открыт.ф-ла */
+    if ((fp = fopen(globalArgs.outFileName, "w")) == NULL)     /*при неудачн.открыт.ф-ла */
         return 7;                                    /* сообщение об ошибке    */
 
     else                                            /*иначе:                  */
-        fwrite(ASM_TEXT, 80, (size_t) ASM_TEXT_IDX, fp);            /* формируем тело об.файла*/
+        for (int i = 0; i < ASM_TEXT_IDX; i++ )
+        {
+            fprintf(fp, "%.80s|\n", ASM_TEXT[i]);
+            printf("%.80s|\n", ASM_TEXT[i]);
+        }
+//        fwrite(ASM_TEXT, 80, (size_t) ASM_TEXT_IDX, fp);            /* формируем тело об.файла*/
     fclose(fp);                                  /*закрываем об'ектный файл*/
     return 0;                                   /*завершить полдпрограмму */
 }
