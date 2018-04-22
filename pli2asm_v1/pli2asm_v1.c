@@ -25,7 +25,7 @@
 /* терпретируемого  фраг- */
 /* мента исх.текста;      */
 #define NSYM      100                             /* - таблицы имен и меток */
-
+#define MAXCALLS  10                              /* - таблицы функций;     */
 
 struct
 {
@@ -95,6 +95,10 @@ char FORMT[MAXFORMT][9];                        /*массив для форма
 /*ставления интерпретиру- */
 /*емого фрагмента исходно-*/
 /*го плотного текста      */
+
+char FUNC_TABLE[MAXCALLS][9];                  /*массив для имен внешних функций */
+int FUNC_AMOUNT;                               /*количество вызовов функций */
+int FUNC_INDEX;                                /*индекс текущей обрабатываемой функции */
 
 int IFORMT;                                      /*индекс форматированного */
 /*массива                 */
@@ -1414,6 +1418,14 @@ int OEN2()
     FORM();                                        /* форматируем ПЛ1-опера- */
     /* тор END                */
 
+    memcpy(ASM_CARD._BUFCARD.OPERAC, "ST", 2);
+    memcpy(ASM_CARD._BUFCARD.OPERAND, "^SBASE,$SWAP", 12);
+    ZKARD();
+
+    memcpy(ASM_CARD._BUFCARD.OPERAC, "L", 1);
+    memcpy(ASM_CARD._BUFCARD.OPERAND, "^BASE,$SWAP", 11);
+    ZKARD();
+
     memcpy(ASM_CARD._BUFCARD.OPERAC, "BCR", 3);
     memcpy(ASM_CARD._BUFCARD.OPERAND, "15,^RET", 7);
     memcpy(ASM_CARD._BUFCARD.COMM, "Return", 6);
@@ -1494,6 +1506,15 @@ int OEN2()
     /*            и           */
     ZKARD();                                       /* запоминание ее         */
 
+    if (FUNC_AMOUNT != 0) {
+        memcpy(ASM_CARD._BUFCARD.METKA, "^TO", 3);  /* формирование EQU-псев- */
+        memcpy(ASM_CARD._BUFCARD.OPERAC, "EQU", 3);   /* дооперации определения */
+        memcpy(ASM_CARD._BUFCARD.OPERAND, "15", 2);   /* номера базового регист-*/
+        /* ра общего назначения   */
+        /*            и           */
+        ZKARD();                                       /* запоминание ее         */
+    }
+
     memcpy(ASM_CARD._BUFCARD.METKA, "$SWAP", 5);  /* формирование DC-псев- */
     memcpy(ASM_CARD._BUFCARD.OPERAC, "DS", 2);   /* дооперации определения */
     memcpy(ASM_CARD._BUFCARD.OPERAND, "F", 1);   /* номера базового регист-*/
@@ -1507,6 +1528,28 @@ int OEN2()
     /* ра общего назначения   */
     /*            и           */
     ZKARD();                                       /* запоминание ее         */
+
+    for (int index = 0; index < FUNC_AMOUNT; ++index) {
+        char OPERAND[4 + strlen(FUNC_TABLE[index])];
+        strcpy(OPERAND, "A(");
+        strcat(OPERAND, FUNC_TABLE[index]);
+        OPERAND[2 + strlen(FUNC_TABLE[index])] = ')';
+        OPERAND[3 + strlen(FUNC_TABLE[index])] = 0;
+        char LABEL[3 + strlen(FUNC_TABLE[index])];
+        strcpy(LABEL, "$A");
+        strcat(LABEL, FUNC_TABLE[index]);
+
+        memcpy(ASM_CARD._BUFCARD.METKA, LABEL, strlen(LABEL));  /* формирование DC-псев- */
+        memcpy(ASM_CARD._BUFCARD.OPERAC, "DC", 2);   /* дооперации определения */
+        memcpy(ASM_CARD._BUFCARD.OPERAND, OPERAND, strlen(OPERAND));   /* номера базового регист-*/
+        /* ра общего назначения   */
+        /*            и           */
+        ZKARD();                                       /* запоминание ее         */
+
+        memcpy(ASM_CARD._BUFCARD.OPERAC, "EXTRN", 5);   /* дооперации определения */
+        memcpy(ASM_CARD._BUFCARD.OPERAND, FUNC_TABLE[index], strlen(FUNC_TABLE[index]));   /* номера базового регист-*/
+        ZKARD();
+    }
 
     memcpy(ASM_CARD._BUFCARD.OPERAC, "END", 3);  /* формирование кода ас-  */
     /* семблеровской псевдо-  */
@@ -1718,12 +1761,30 @@ int ZNK2()
 
 int OCL1()
 {
+    FORM();
+    // Now in FORMT[0] - 'CALL', in FORMT[1] - function name, so copy it in FUNC_TABLE
+    strcpy(FUNC_TABLE[FUNC_AMOUNT++], FORMT[1]);
     return 0;
 }
 
 
 int OCL2()
 {
+    char OPERAND[7 + strlen(FUNC_TABLE[FUNC_INDEX])];
+    strcpy(OPERAND, "^TO,$A");
+    strcat(OPERAND, FUNC_TABLE[FUNC_INDEX]);
+    memcpy(ASM_CARD._BUFCARD.OPERAC, "L", 1);/* достраиваем код и опе- */
+    memcpy(ASM_CARD._BUFCARD.OPERAND, OPERAND, strlen(OPERAND));   /* ранды  в  START-псевдо-*//* операции Ассемблера    */
+    ZKARD();
+
+    memcpy(ASM_CARD._BUFCARD.OPERAC, "BALR", 4);/* достраиваем код и опе- */
+    memcpy(ASM_CARD._BUFCARD.OPERAND, "^RET,^TO", 8);   /* ранды  в  START-псевдо-*//* операции Ассемблера    */
+    ZKARD();
+
+    memcpy(ASM_CARD._BUFCARD.OPERAC, "L", 1);/* достраиваем код и опе- */
+    memcpy(ASM_CARD._BUFCARD.OPERAND, "^RET,$S0", 8);   /* ранды  в  START-псевдо-*//* операции Ассемблера    */
+    ZKARD();
+
     return 0;
 }
 
