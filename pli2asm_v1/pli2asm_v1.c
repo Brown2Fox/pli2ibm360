@@ -1479,16 +1479,37 @@ int OEN2()
     /* рабочий регистры общего*/
     /* назначения             */
 
-    memcpy(ASM_CARD._BUFCARD.METKA, "RBASE", 5); /* формирование EQU-псев- */
+    memcpy(ASM_CARD._BUFCARD.METKA, "^BASE", 5); /* формирование EQU-псев- */
     memcpy(ASM_CARD._BUFCARD.OPERAC, "EQU", 3);   /* дооперации определения */
-    memcpy(ASM_CARD._BUFCARD.OPERAND, "15", 2);  /* номера базового регист-*/
+    memcpy(ASM_CARD._BUFCARD.OPERAND, "12", 2);  /* номера базового регист-*/
     /* ра общего назначения   */
     /*           и            */
     ZKARD();                                       /* запоминание ее         */
 
-    memcpy(ASM_CARD._BUFCARD.METKA, "RRAB", 4);  /* формирование EQU-псев- */
+    memcpy(ASM_CARD._BUFCARD.METKA, "^SBASE", 6);  /* формирование EQU-псев- */
     memcpy(ASM_CARD._BUFCARD.OPERAC, "EQU", 3);   /* дооперации определения */
-    memcpy(ASM_CARD._BUFCARD.OPERAND, "5", 1);   /* номера базового регист-*/
+    memcpy(ASM_CARD._BUFCARD.OPERAND, "13", 2);   /* номера базового регист-*/
+    /* ра общего назначения   */
+    /*            и           */
+    ZKARD();                                       /* запоминание ее         */
+
+    memcpy(ASM_CARD._BUFCARD.METKA, "^RET", 4);  /* формирование EQU-псев- */
+    memcpy(ASM_CARD._BUFCARD.OPERAC, "EQU", 3);   /* дооперации определения */
+    memcpy(ASM_CARD._BUFCARD.OPERAND, "14", 2);   /* номера базового регист-*/
+    /* ра общего назначения   */
+    /*            и           */
+    ZKARD();                                       /* запоминание ее         */
+
+    memcpy(ASM_CARD._BUFCARD.METKA, "$SWAP", 5);  /* формирование DC-псев- */
+    memcpy(ASM_CARD._BUFCARD.OPERAC, "DC", 2);   /* дооперации определения */
+    memcpy(ASM_CARD._BUFCARD.OPERAND, "F", 1);   /* номера базового регист-*/
+    /* ра общего назначения   */
+    /*            и           */
+    ZKARD();                                       /* запоминание ее         */
+
+    memcpy(ASM_CARD._BUFCARD.METKA, "$S0", 3);  /* формирование DC-псев- */
+    memcpy(ASM_CARD._BUFCARD.OPERAC, "DC", 2);   /* дооперации определения */
+    memcpy(ASM_CARD._BUFCARD.OPERAND, "F", 1);   /* номера базового регист-*/
     /* ра общего назначения   */
     /*            и           */
     ZKARD();                                       /* запоминание ее         */
@@ -1603,15 +1624,24 @@ int OPR2()
     /* блера                  */
 
     memcpy(ASM_CARD._BUFCARD.OPERAC, "BALR", 4); /* формируем BALR-операцию*/
-    memcpy(ASM_CARD._BUFCARD.OPERAND, "RBASE,0", 7); /* Ассемблера             */
+    memcpy(ASM_CARD._BUFCARD.OPERAND, "^BASE,0", 7); /* Ассемблера             */
     memcpy(ASM_CARD._BUFCARD.COMM, "Загрузить регистр базы", 22);
     ZKARD();                                       /* и запоминаем ее        */
 
     memcpy(ASM_CARD._BUFCARD.OPERAC, "USING", 5);/* формируем USING-псевдо-*/
-    memcpy(ASM_CARD._BUFCARD.OPERAND, "*,RBASE", 7); /* операцию Ассемблера    */
-
+    memcpy(ASM_CARD._BUFCARD.OPERAND, "*,^BASE", 7); /* операцию Ассемблера    */
     memcpy(ASM_CARD._BUFCARD.COMM, "Назначить регистр базой", 23);
     ZKARD();                                       /* и запоминаем ее        */
+
+    memcpy(ASM_CARD._BUFCARD.OPERAC, "ST", 2); /* формируем ST-операцию*/
+    memcpy(ASM_CARD._BUFCARD.OPERAND, "^RET,$S0", 8); /* Ассемблера             */
+    memcpy(ASM_CARD._BUFCARD.COMM, "Сохраняем адрес возврата", 24);
+    ZKARD();
+
+    memcpy(ASM_CARD._BUFCARD.OPERAC, "ST", 2); /* формируем ST-операцию*/
+    memcpy(ASM_CARD._BUFCARD.OPERAND, "^BASE,$SWAP", 11); /* Ассемблера             */
+    memcpy(ASM_CARD._BUFCARD.COMM, "Сохраняем базовый адрес", 23);
+    ZKARD();
 
     return 0;                                       /* завершить подпрограмму */
 }
