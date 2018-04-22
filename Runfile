@@ -3,8 +3,8 @@ DIR=./.build
 
 PL1_FILE_NAME=examppl.pli
 
-PL1_FILE_NAME1=ex1.pli
-PL1_FILE_NAME2=ex2.pli
+PL1_FILE_NAME1=../ex1.pli
+PL1_FILE_NAME2=../ex2.pli
 
 ASM_FILE_NAME1=ex1.asm
 ASM_FILE_NAME2=ex2.asm
