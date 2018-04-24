@@ -1220,7 +1220,7 @@ int AVI2()
                     else
                         memcpy(ASM_CARD._BUFCARD.OPERAC, "L", 1);
 
-                    strcpy(ASM_CARD._BUFCARD.OPERAND, "$RRAB,");
+                    strcpy(ASM_CARD._BUFCARD.OPERAND, "^ACR,");
                     strcat(ASM_CARD._BUFCARD.OPERAND, FORMT[0]);
 
                     ASM_CARD._BUFCARD.OPERAND[strlen(ASM_CARD._BUFCARD.OPERAND)] = ' ';
@@ -1266,7 +1266,7 @@ int AVI2()
                         }
                     }
 
-                    strcpy(ASM_CARD._BUFCARD.OPERAND, "$RRAB,");
+                    strcpy(ASM_CARD._BUFCARD.OPERAND, "^ACR,");
                     strcat(ASM_CARD._BUFCARD.OPERAND, FORMT[IFORMT - 1]);
                     ASM_CARD._BUFCARD.OPERAND[strlen(ASM_CARD._BUFCARD.OPERAND)] = ' ';
                     ZKARD();
@@ -1427,6 +1427,11 @@ int OEN2()
     memcpy(ASM_CARD._BUFCARD.OPERAND, "15", 2);
     ZKARD();
 
+    memcpy(ASM_CARD._BUFCARD.METKA, "^ACR", 4);
+    memcpy(ASM_CARD._BUFCARD.OPERAC, "EQU", 3);
+    memcpy(ASM_CARD._BUFCARD.OPERAND, "3", 1);
+    ZKARD();
+
     memcpy(ASM_CARD._BUFCARD.METKA, "$SWAP", 5);
     memcpy(ASM_CARD._BUFCARD.OPERAC, "DS", 2);
     memcpy(ASM_CARD._BUFCARD.OPERAND, "F", 1);
@@ -1437,10 +1442,7 @@ int OEN2()
     memcpy(ASM_CARD._BUFCARD.OPERAND, "F", 1);
     ZKARD();
 
-    memcpy(ASM_CARD._BUFCARD.METKA, "$RRAB", 5);
-    memcpy(ASM_CARD._BUFCARD.OPERAC, "DS", 2);
-    memcpy(ASM_CARD._BUFCARD.OPERAND, "F", 1);
-    ZKARD();
+
 
 
     for (int i = 0; i < ISYM; i++)
@@ -1529,7 +1531,7 @@ int OPA2()
                     memcpy(ASM_CARD._BUFCARD.OPERAC, "ST", 2);
                 }
 
-                strcpy(ASM_CARD._BUFCARD.OPERAND, "$RRAB,");
+                strcpy(ASM_CARD._BUFCARD.OPERAND, "^ACR,");
                 strcat(ASM_CARD._BUFCARD.OPERAND, FORMT[0]);
 
                 ASM_CARD._BUFCARD.OPERAND[strlen(ASM_CARD._BUFCARD.OPERAND)] = ' ';
