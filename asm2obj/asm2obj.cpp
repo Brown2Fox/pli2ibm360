@@ -106,7 +106,7 @@ private:
 
     std::vector<asm_mapping_u> asm_lines;
 
-    typedef std::shared_ptr<Card> CardPtr;
+    using CardPtr = std::shared_ptr<Card>;
     std::vector< CardPtr > cards;
 
 public:

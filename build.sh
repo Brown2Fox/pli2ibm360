@@ -14,3 +14,4 @@ make $@
 [ -f ibm360vm ] && mv ibm360vm ../$BUILD_DIR/
 [ -f pli2asm ] && mv pli2asm ../$BUILD_DIR/
 [ -f pli2asm_v1 ] && mv pli2asm_v1 ../$BUILD_DIR/
+[ -f asm2obj_v1 ] && mv asm2obj_v1 ../$BUILD_DIR/

@@ -30,7 +30,6 @@ public:
         sym_name_asm_1 = strtok((char*)p.asm_line.structure.operand, ",");
         sym_name_asm_2 = strtok(nullptr, " ");
 
-//        if (isalpha((int)*sym_name_asm_2))
         if (isIdentifier(sym_name_asm_2[0]))
         {
             bool found = false;
