@@ -1395,12 +1395,8 @@ int OEN2()
     char RAB[20];
     FORM();
 
-    memcpy(ASM_CARD._BUFCARD.OPERAC, "ST", 2);
-    memcpy(ASM_CARD._BUFCARD.OPERAND, "^SBASE,$SWAP", 12);
-    ZKARD();
-
     memcpy(ASM_CARD._BUFCARD.OPERAC, "L", 1);
-    memcpy(ASM_CARD._BUFCARD.OPERAND, "^BASE,$SWAP", 11);
+    memcpy(ASM_CARD._BUFCARD.OPERAND, "^BASE,$PREB", 11);
     ZKARD();
 
     memcpy(ASM_CARD._BUFCARD.OPERAC, "BCR", 3);
@@ -1433,6 +1429,11 @@ int OEN2()
     ZKARD();
 
     memcpy(ASM_CARD._BUFCARD.METKA, "$SWAP", 5);
+    memcpy(ASM_CARD._BUFCARD.OPERAC, "DS", 2);
+    memcpy(ASM_CARD._BUFCARD.OPERAND, "F", 1);
+    ZKARD();
+
+    memcpy(ASM_CARD._BUFCARD.METKA, "$PREB", 5);
     memcpy(ASM_CARD._BUFCARD.OPERAC, "DS", 2);
     memcpy(ASM_CARD._BUFCARD.OPERAND, "F", 1);
     ZKARD();
@@ -1580,6 +1581,10 @@ int OPR2()
 
     memcpy(ASM_CARD._BUFCARD.OPERAC, "USING", 5);
     memcpy(ASM_CARD._BUFCARD.OPERAND, "*,^BASE", 7);
+    ZKARD();
+
+    memcpy(ASM_CARD._BUFCARD.OPERAC, "ST", 2);
+    memcpy(ASM_CARD._BUFCARD.OPERAND, "^SBASE,$PREB", 12);
     ZKARD();
 
     return 0;
